@@ -63,9 +63,15 @@ Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nad
 2. [Criar a imagem mestre](docs/02-criar-imagem-mestre.md)
 3. [Restaurar em lote](docs/03-restaurar-em-lote.md)
 4. [Solução de problemas](docs/04-solucao-de-problemas.md)
-5. [Checklist de campo](docs/checklist.md)
+5. [Preparar o pendrive pelo Windows](docs/05-preparar-pelo-windows.md)
+6. [Checklist de campo](docs/checklist.md)
 
 ## Requisitos
+
+Os scripts de preparo rodam em **Linux**. Se você só tem Windows à mão, veja
+[docs/05-preparar-pelo-windows.md](docs/05-preparar-pelo-windows.md) — o caminho
+por lá é o Ventoy, e os scripts de captura e restauração continuam funcionando
+normalmente, porque rodam dentro do Clonezilla Live.
 
 Na máquina onde o pendrive é preparado (Debian/Ubuntu):
 
