@@ -25,6 +25,14 @@ manual em cada máquina restaurada.
    A máquina desliga sozinha. **Não ligue de novo no Windows** antes de clonar.
 6. Desfragmente antes do sysprep se o disco for HDD (não faça em SSD).
 
+> **Use conta local, não conta Microsoft.** Uma conta Microsoft na imagem mestre
+> leva a identidade e o vínculo online para todas as máquinas clonadas, e a senha
+> dela não pode ser alterada pela máquina (`net user` responde
+> `Erro de sistema 8646 — o sistema não é autoritativo para a conta`). Crie a
+> conta modelo em Configurações → Contas → Outros usuários → *Não tenho as
+> informações de login desta pessoa* → *Adicionar um usuário sem conta da
+> Microsoft*.
+
 > Licenciamento: chaves OEM são vinculadas ao equipamento de origem e não podem
 > ser transferidas por clonagem. Para parques de máquinas, use licenciamento por
 > volume (KMS/MAK) e um `unattend.xml` no sysprep.
