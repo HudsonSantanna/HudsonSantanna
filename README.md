@@ -54,6 +54,9 @@ sudo /home/partimag/scripts/restaurar-maquina.sh       # grava em outra máquina
 | `scripts/clonar-maquina.sh`      | Clonezilla Live  | Captura a imagem de um disco para `imagens/` |
 | `scripts/restaurar-maquina.sh`   | Clonezilla Live  | Restaura uma imagem para o disco de destino |
 | `scripts/lib/comum.sh`           | —                | Funções compartilhadas (log, confirmações, partições) |
+| `scripts/windows/1-diagnostico.ps1`   | Windows     | Relatório de espaço, saúde dos discos, maiores pastas e arquivos |
+| `scripts/windows/2-limpeza.ps1`       | Windows     | Libera caches e temporários (simula por padrão) |
+| `scripts/windows/3-mover-para-hd.ps1` | Windows     | Copia para HD externo, confere e só então apaga a origem |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada).
 
@@ -64,7 +67,8 @@ Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nad
 3. [Restaurar em lote](docs/03-restaurar-em-lote.md)
 4. [Solução de problemas](docs/04-solucao-de-problemas.md)
 5. [Preparar o pendrive pelo Windows](docs/05-preparar-pelo-windows.md)
-6. [Checklist de campo](docs/checklist.md)
+6. [Manutenção da máquina no Windows](docs/06-manutencao-windows.md)
+7. [Checklist de campo](docs/checklist.md)
 
 ## Requisitos
 
