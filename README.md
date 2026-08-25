@@ -53,6 +53,7 @@ sudo /home/partimag/scripts/restaurar-maquina.sh       # grava em outra máquina
 | `scripts/verificar-pendrive.sh`  | Linux comum      | Confere partições, arquivos de boot BIOS/UEFI e repositório |
 | `scripts/clonar-maquina.sh`      | Clonezilla Live  | Captura a imagem de um disco para `imagens/` |
 | `scripts/restaurar-maquina.sh`   | Clonezilla Live  | Restaura uma imagem para o disco de destino |
+| `scripts/montar-servidor.sh`     | Clonezilla Live  | Monta a pasta compartilhada do servidor em `/home/partimag` |
 | `scripts/lib/comum.sh`           | —                | Funções compartilhadas (log, confirmações, partições) |
 | `scripts/windows/1-diagnostico.ps1`   | Windows     | Relatório de espaço, saúde dos discos, maiores pastas e arquivos |
 | `scripts/windows/2-limpeza.ps1`       | Windows     | Libera caches e temporários (simula por padrão) |
@@ -68,7 +69,9 @@ Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nad
 4. [Solução de problemas](docs/04-solucao-de-problemas.md)
 5. [Preparar o pendrive pelo Windows](docs/05-preparar-pelo-windows.md)
 6. [Manutenção da máquina no Windows](docs/06-manutencao-windows.md)
-7. [Checklist de campo](docs/checklist.md)
+7. [Sincronizar as máquinas](docs/07-sincronizar-maquinas.md)
+8. [Usar o servidor da rede](docs/08-servidor-de-rede.md)
+9. [Checklist de campo](docs/checklist.md)
 
 ## Requisitos
 
