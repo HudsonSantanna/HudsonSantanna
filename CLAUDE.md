@@ -17,6 +17,7 @@ computador. É por ele que todas as sessões partem das mesmas regras.
 | `scripts/verificar-pendrive.sh` | Confere partições, boot BIOS/UEFI e repositório |
 | `scripts/clonar-maquina.sh`     | Captura imagem (roda dentro do Clonezilla Live) |
 | `scripts/restaurar-maquina.sh`  | Restaura imagem (roda dentro do Clonezilla Live) |
+| `scripts/montar-servidor.sh`    | Monta o repositório de imagens de um servidor SMB pela rede |
 | `scripts/lib/comum.sh`          | Funções compartilhadas: log, confirmação, partições |
 | `scripts/windows/*.ps1`         | Diagnóstico, limpeza e mudança de dados (Windows) |
 | `docs/`                         | Passo a passo numerado e checklist de campo |
@@ -45,7 +46,9 @@ e no pull request. Rodar antes evita PR vermelho.
 ## Sincronizar entre máquinas
 
 O repositório no GitHub é o ponto de encontro: nenhuma sessão fala direto com
-a outra. Veja [docs/07-sincronizar-maquinas.md](docs/07-sincronizar-maquinas.md).
+a outra. Veja [docs/07-sincronizar-maquinas.md](docs/07-sincronizar-maquinas.md). Quando
+há servidor na rede, as imagens vão por ele em vez do pendrive:
+[docs/08-servidor-de-rede.md](docs/08-servidor-de-rede.md).
 
 ## Cuidados
 

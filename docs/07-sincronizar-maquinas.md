@@ -75,6 +75,10 @@ git merge origin/main
 
 ## Sincronizar as imagens entre pendrives
 
+> Se houver um servidor na rede, esta parte fica dispensável: as imagens
+> ficam no servidor e o Clonezilla lê e grava direto lá. Veja
+> [08-servidor-de-rede.md](08-servidor-de-rede.md).
+
 As imagens não passam pelo Git. Com os dois pendrives montados:
 
 ```bash
