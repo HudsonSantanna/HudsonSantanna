@@ -68,7 +68,8 @@ Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nad
 4. [Solução de problemas](docs/04-solucao-de-problemas.md)
 5. [Preparar o pendrive pelo Windows](docs/05-preparar-pelo-windows.md)
 6. [Manutenção da máquina no Windows](docs/06-manutencao-windows.md)
-7. [Checklist de campo](docs/checklist.md)
+7. [Sincronizar as máquinas](docs/07-sincronizar-maquinas.md)
+8. [Checklist de campo](docs/checklist.md)
 
 ## Requisitos
 
