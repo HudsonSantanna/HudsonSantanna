@@ -10,6 +10,14 @@ Para imprimir e levar junto com o pendrive.
 - [ ] `sudo ./scripts/verificar-pendrive.sh -d /dev/sdX` sem falhas
 - [ ] Boot testado em uma máquina UEFI **e** em uma BIOS/legado
 
+## Imagens no servidor (quando houver)
+
+- [ ] Cabo de rede ligado na máquina que vai clonar ou restaurar
+- [ ] `sudo /home/partimag/scripts/verificar-rede.sh` sem falhas
+- [ ] Espaço livre no servidor conferido (12 a 25 GB por imagem)
+- [ ] Sem rede: usar `--local` e sincronizar depois com
+      `sincronizar-imagens.sh --enviar <imagem>`
+
 ## Máquina modelo (antes de capturar)
 
 - [ ] Sistema, drivers genéricos e programas padrão instalados
@@ -25,7 +33,7 @@ Para imprimir e levar junto com o pendrive.
 
 - [ ] Boot pelo pendrive → `Clonezilla live` → `Enter_shell`
 - [ ] `sudo mount -L IMAGENS /home/partimag`
-- [ ] `sudo /home/partimag/scripts/clonar-maquina.sh`
+- [ ] `sudo /home/partimag/scripts/clonar-maquina.sh` (grava no servidor, se configurado)
 - [ ] Nome da imagem anotado: ______________________
 - [ ] Log em `logs/` sem erros
 - [ ] `NOTAS.txt` criado dentro da pasta da imagem

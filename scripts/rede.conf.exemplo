@@ -1,0 +1,49 @@
+# rede.conf - repositorio de imagens (o "cerebro") na rede do escritorio.
+#
+# Copie para um destes lugares (o primeiro encontrado vence):
+#   scripts/rede.conf              (junto dos scripts, no pendrive)
+#   /home/partimag/rede.conf       (raiz da particao IMAGENS)
+#   /etc/kit-clonagem/rede.conf    (maquina fixa de manutencao)
+# Ou aponte com: --config /caminho/rede.conf
+#
+# Sem este arquivo (e sem --servidor), os scripts continuam usando o
+# repositorio local do pendrive, como antes.
+
+# Servidor onde ficam as imagens. IP e mais confiavel que nome no Clonezilla.
+SERVIDOR=192.168.0.10
+
+# ssh (sshfs) | nfs | smb (compartilhamento Windows/Samba)
+PROTOCOLO=ssh
+
+# Caminho exportado no servidor. Deve conter (ou passar a conter) imagens/ e logs/.
+#   ssh -> caminho absoluto:            /srv/clonagem
+#   nfs -> caminho exportado:           /srv/clonagem
+#   smb -> nome do compartilhamento:    clonagem
+CAMINHO=/srv/clonagem
+
+# Usuario no servidor (ssh e smb). No smb, sem CREDENCIAIS a senha e pedida na hora.
+USUARIO=clonagem
+
+# Porta, quando nao for a padrao (ssh 22, nfs 2049, smb 445).
+#PORTA=22
+
+# ssh -> chave privada; smb -> arquivo no formato:
+#   username=clonagem
+#   password=...
+#   domain=ESCRITORIO
+# Guarde com chmod 600.
+#CREDENCIAIS=/home/partimag/credenciais-smb
+
+# Dominio Windows, quando houver (somente smb).
+#DOMINIO=ESCRITORIO
+
+# Opcoes extras de montagem, separadas por virgula.
+#OPCOES=vers=2.1
+
+# Interface de rede a usar. Vazio = primeira com cabo conectado.
+#INTERFACE=enp3s0
+
+# Rede fixa. Deixe IP vazio para usar DHCP (o normal no escritorio).
+#IP=192.168.0.50/24
+#GATEWAY=192.168.0.1
+#DNS=192.168.0.1

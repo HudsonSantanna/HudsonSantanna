@@ -91,6 +91,13 @@ if [ -n "${PART_DADOS:-}" ] && [ -b "$PART_DADOS" ]; then
   conferir "pasta imagens/"                      test -d "$TMP_MNT/imagens"
   conferir "scripts/clonar-maquina.sh presente"  test -f "$TMP_MNT/scripts/clonar-maquina.sh"
   conferir "scripts/restaurar-maquina.sh presente" test -f "$TMP_MNT/scripts/restaurar-maquina.sh"
+  conferir "scripts/lib/rede.sh presente"        test -f "$TMP_MNT/scripts/lib/rede.sh"
+  if [ -f "$TMP_MNT/rede.conf" ]; then
+    servidor="$(grep -iE '^[[:space:]]*SERVIDOR[[:space:]]*=' "$TMP_MNT/rede.conf" | tail -1 | cut -d= -f2- | tr -d '[:space:]')"
+    ok "rede.conf presente (servidor: ${servidor:-nao informado})"
+  else
+    info "Sem rede.conf: as imagens ficam no proprio pendrive."
+  fi
   livre="$(df -h --output=avail "$TMP_MNT" | tail -1 | tr -d ' ')"
   info "Espaco livre para imagens: $livre"
   n_imagens="$(find "$TMP_MNT/imagens" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l)"

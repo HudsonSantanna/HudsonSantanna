@@ -26,6 +26,10 @@ ESQUEMA="mbr"
 VERIFICAR=1
 PERMITIR_NAO_REMOVIVEL=0
 ASSUMIR_SIM=0
+CFG_SERVIDOR=""
+CFG_PROTOCOLO="ssh"
+CFG_CAMINHO=""
+CFG_USUARIO=""
 MIRROR="https://free.nchc.org.tw/clonezilla-live/stable"
 
 ajuda() {
@@ -45,6 +49,10 @@ Opcoes:
   -f, --fs-dados FS       ext4 (padrao), ntfs, exfat ou vfat.
   -e, --esquema ESQ       mbr (padrao, BIOS+UEFI) ou gpt (UEFI).
       --rotulo-dados NOME Rotulo da particao de imagens (padrao: IMAGENS).
+      --servidor HOST     Grava rede.conf apontando para o servidor de imagens.
+      --protocolo P       ssh (padrao), nfs ou smb, para o rede.conf.
+      --caminho CAMINHO   Caminho/compartilhamento das imagens no servidor.
+      --usuario NOME      Usuario no servidor, para o rede.conf.
       --sem-verificacao   Nao conferir o SHA256 do download.
       --permitir-nao-removivel  Aceita discos que nao sejam USB removivel.
       --simular           Mostra o que seria feito, sem escrever nada.
@@ -55,6 +63,8 @@ Exemplos:
   sudo ./preparar-pendrive.sh -d /dev/sdb
   sudo ./preparar-pendrive.sh -d /dev/sdb -z ~/Downloads/clonezilla-live-3.2.0-5-amd64.zip
   sudo ./preparar-pendrive.sh -d /dev/sdb -f ntfs -b 4GiB
+  sudo ./preparar-pendrive.sh -d /dev/sdb --servidor 192.168.0.10 \
+       --caminho /srv/clonagem --usuario clonagem
 AJUDA
 }
 
@@ -68,6 +78,10 @@ while [ $# -gt 0 ]; do
     -f|--fs-dados)    FS_DADOS="${2:-}"; shift 2 ;;
     -e|--esquema)     ESQUEMA="${2:-}"; shift 2 ;;
     --rotulo-dados)   ROTULO_DADOS="${2:-}"; shift 2 ;;
+    --servidor)       CFG_SERVIDOR="${2:-}"; shift 2 ;;
+    --protocolo)      CFG_PROTOCOLO="${2:-}"; shift 2 ;;
+    --caminho)        CFG_CAMINHO="${2:-}"; shift 2 ;;
+    --usuario)        CFG_USUARIO="${2:-}"; shift 2 ;;
     --sem-verificacao) VERIFICAR=0; shift ;;
     --permitir-nao-removivel) PERMITIR_NAO_REMOVIVEL=1; shift ;;
     --simular)        SIMULAR=1; shift ;;
@@ -89,6 +103,13 @@ case "$ESQUEMA" in
   mbr|gpt) ;;
   *) abortar "Esquema invalido: $ESQUEMA (use mbr ou gpt)." ;;
 esac
+case "$CFG_PROTOCOLO" in
+  ssh|nfs|smb) ;;
+  *) abortar "Protocolo invalido: $CFG_PROTOCOLO (use ssh, nfs ou smb)." ;;
+esac
+if [ -n "$CFG_SERVIDOR" ] && [ -z "$CFG_CAMINHO" ]; then
+  abortar "Com --servidor informe tambem --caminho (onde ficam as imagens no servidor)."
+fi
 
 # ------------------------------------------------------------- dependencias
 DEPS=(lsblk blkid wipefs parted mkfs.vfat unzip rsync partprobe)
@@ -301,6 +322,18 @@ if [ "$SIMULAR" != "1" ]; then
   [ -d "$DIR_RAIZ/docs" ] && rsync -a --delete "$DIR_RAIZ/docs/" "$MNT_DADOS/docs/"
   [ -f "$DIR_RAIZ/README.md" ] && cp "$DIR_RAIZ/README.md" "$MNT_DADOS/docs/"
   chmod +x "$MNT_DADOS"/scripts/*.sh 2>/dev/null || true
+  if [ -n "$CFG_SERVIDOR" ]; then
+    cat > "$MNT_DADOS/rede.conf" <<CONF
+# Repositorio de imagens na rede do escritorio.
+# Gerado por preparar-pendrive.sh em $(date '+%d/%m/%Y %H:%M').
+# Modelo completo em scripts/rede.conf.exemplo.
+SERVIDOR=$CFG_SERVIDOR
+PROTOCOLO=$CFG_PROTOCOLO
+CAMINHO=$CFG_CAMINHO
+USUARIO=$CFG_USUARIO
+CONF
+    chmod 600 "$MNT_DADOS/rede.conf"
+  fi
   cat > "$MNT_DADOS/LEIAME.txt" <<LEIAME
 Pendrive de clonagem - Clonezilla Live
 Preparado em: $(date '+%d/%m/%Y %H:%M')
@@ -309,15 +342,21 @@ Esquema: $ESQUEMA | Boot: $ROTULO_BOOT (FAT32) | Dados: $ROTULO_DADOS ($FS_DADOS
 
 Pastas:
   imagens/  -> imagens do Clonezilla (repositorio /home/partimag)
-  scripts/  -> clonar-maquina.sh, restaurar-maquina.sh, verificar-pendrive.sh
+  scripts/  -> clonar-maquina.sh, restaurar-maquina.sh, sincronizar-imagens.sh
   logs/     -> logs das operacoes
   docs/     -> guias de uso
+  rede.conf -> servidor de imagens do escritorio (quando configurado)
+
+Repositorio de imagens: ${CFG_SERVIDOR:-somente o pendrive}
 
 No Clonezilla Live, escolha "Enter_shell" e execute:
   sudo mkdir -p /home/partimag
   sudo mount -L $ROTULO_DADOS /home/partimag
+  sudo /home/partimag/scripts/verificar-rede.sh      # conferir o servidor
   sudo /home/partimag/scripts/clonar-maquina.sh      # capturar imagem
   sudo /home/partimag/scripts/restaurar-maquina.sh   # gravar imagem
+
+Sem rede, acrescente --local para usar as imagens do proprio pendrive.
 LEIAME
 fi
 executar sync
@@ -333,7 +372,12 @@ Proximos passos:
   2. Escolha "Clonezilla live" no menu e depois "Enter_shell" para usar os scripts,
      ou siga o assistente padrao salvando em /home/partimag.
   3. No shell: sudo mount -L $ROTULO_DADOS /home/partimag
+     Conferir a rede:  sudo /home/partimag/scripts/verificar-rede.sh
      Capturar imagem:  sudo /home/partimag/scripts/clonar-maquina.sh
      Restaurar imagem: sudo /home/partimag/scripts/restaurar-maquina.sh
-  Detalhes em docs/02-criar-imagem-mestre.md e docs/03-restaurar-em-lote.md
+  Repositorio de imagens: ${CFG_SERVIDOR:-pendrive (nenhum servidor configurado)}
+  Para configurar o servidor depois, copie scripts/rede.conf.exemplo para
+  a raiz da particao $ROTULO_DADOS como rede.conf e ajuste os valores.
+  Detalhes em docs/02-criar-imagem-mestre.md, docs/03-restaurar-em-lote.md
+  e docs/07-imagens-no-servidor.md
 FIM
