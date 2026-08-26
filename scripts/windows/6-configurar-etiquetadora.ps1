@@ -177,6 +177,32 @@ if ($ImpressoraEstoque) {
     exit 1
 }
 
+# O instance id de cada USBPRINT termina no nome da porta - e assim que da para
+# saber quais portas tem impressora LIGADA agora. LPT3: e USB005 orfa aceitam
+# trabalho e engolem calados: o spooler nao reclama, o papel nao sai.
+$portasVivas = @()
+if (Get-Command 'Get-PnpDevice' -ErrorAction SilentlyContinue) {
+    $portasVivas = @(@(Get-PnpDevice -PresentOnly -ErrorAction SilentlyContinue |
+        Where-Object { $_.InstanceId -like 'USBPRINT\*' } |
+        ForEach-Object { if ($_.InstanceId -match '(USB\d+)$') { $Matches[1] } }) |
+        Select-Object -Unique)
+}
+if ($portasVivas.Count -gt 0) {
+    Write-Host "  Portas com impressora ligada agora: $($portasVivas -join ', ')"
+    if ($portasVivas -notcontains $porta) {
+        Erro "a porta $porta NAO tem impressora ligada agora"
+        Write-Host ''
+        Write-Host '  Fila apontada para porta morta aceita o trabalho e nao imprime nada:'
+        Write-Host '  o spooler nao acusa erro e o site diz que imprimiu. E o que ja acontece'
+        Write-Host "  hoje com a fila '$FilaArgos' apontada para LPT3:."
+        Write-Host ''
+        Write-Host "  Use uma das portas vivas: $($portasVivas -join ', ')"
+        Write-Host "     .\6-configurar-etiquetadora.ps1 -PortaUsb $($portasVivas[0]) -Confirmar"
+        exit 1
+    }
+    OK "porta $porta tem impressora ligada"
+}
+
 if ($porta -and ($intocaveis | Where-Object { $_.PortName -eq $porta })) {
     Erro "a porta $porta e a da FISCAL ($(($intocaveis | Where-Object { $_.PortName -eq $porta })[0].Name))."
     Erro 'Recusando: a fila do estoque nessa porta mandaria ZPL para a impressora fiscal.'
@@ -237,6 +263,15 @@ if ($existente) {
         [void](Fazer "mover a fila '$FilaArgos' da porta $($existente.PortName) para $porta" {
             Set-Printer -Name $FilaArgos -PortName $porta
         })
+    }
+    if ($existente.DriverName -ne $driver) {
+        Aviso "driver atual: '$($existente.DriverName)'"
+        Aviso 'ZPL cru passando por driver de impressora sai deformado - o caminho RAW precisa do Generic / Text Only.'
+        [void](Fazer "trocar o driver da fila para '$driver'" {
+            Set-Printer -Name $FilaArgos -DriverName $driver
+        })
+    } else {
+        OK "driver ja e '$driver'"
     }
     if (-not $existente.Shared -or $existente.ShareName -ne $FilaArgos) {
         [void](Fazer "compartilhar a fila como '$FilaArgos'" {
