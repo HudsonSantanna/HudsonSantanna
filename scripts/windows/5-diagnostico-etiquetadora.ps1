@@ -20,7 +20,7 @@
 [CmdletBinding()]
 param(
     [int]   $Porta  = 9110,
-    [string]$Origem = 'https://estoque.argos.app.br',
+    [string]$Origem = 'https://softwareargos.org',
     [string]$Saida
 )
 
@@ -310,13 +310,21 @@ if ($resp -and $resp.StatusCode -eq 200) {
         Aviso 'TESTE NAO REALIZADO (isto nao e uma falta): o agente nao respondeu ao preflight OPTIONS'
         Aviso 'Nem todo agente responde OPTIONS fora do navegador. Confira o elo 6 no Chrome.'
     } else {
-        $pna    = Header $pre 'Access-Control-Allow-Private-Network'
-        $origem = Header $pre 'Access-Control-Allow-Origin'
-        if ($origem) { Escrever "  Access-Control-Allow-Origin ..............: $origem" }
+        $pna       = Header $pre 'Access-Control-Allow-Private-Network'
+        $permitida = Header $pre 'Access-Control-Allow-Origin'
+        if ($permitida) { Escrever "  Access-Control-Allow-Origin ..............: $permitida" }
         if ($pna) {
             OK "header Access-Control-Allow-Private-Network: $pna"
         } else {
-            Falta "preflight respondeu SEM Access-Control-Allow-Private-Network - o Chrome bloqueia a chamada de $Origem"
+            # Nao e falta: quem decide o elo 6 e o navegador, nao este script.
+            # Se o selo verde "Etiquetadora conectada" aparece no site, o Chrome
+            # esta deixando a chamada passar e este teste esta errado, nao o site.
+            Aviso "preflight sem Access-Control-Allow-Private-Network para $Origem"
+            Aviso 'ISTO SO IMPORTA SE O SITE NAO ESTIVER FUNCIONANDO. O selo verde'
+            Aviso '"Etiquetadora conectada" no Argos Estoque vale mais que este teste:'
+            Aviso 'se ele aparece, o Chrome deixa passar e nao ha nada a corrigir aqui.'
+            Aviso "Se o endereco acima nao for o do seu Argos Estoque, passe o certo:"
+            Aviso "   .\5-diagnostico-etiquetadora.ps1 -Origem 'https://SEU.ENDERECO'"
         }
     }
 } else {

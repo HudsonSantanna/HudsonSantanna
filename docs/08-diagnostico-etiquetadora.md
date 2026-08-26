@@ -59,7 +59,7 @@ Roda em segundos. Ao final salva na Área de Trabalho um arquivo
 | Parâmetro | Padrão | Para que serve |
 |---|---|---|
 | `-Porta` | `9110` | Porta do agente ArgosPrint, se um dia mudar |
-| `-Origem` | `https://estoque.argos.app.br` | Endereço do Argos Estoque, usado no preflight PNA do elo 5 |
+| `-Origem` | `https://softwareargos.org` | Endereço do Argos Estoque, usado no preflight PNA do elo 5 |
 | `-Saida` | Área de Trabalho | Caminho do relatório |
 
 Se o endereço do Argos Estoque não for o do padrão, passe o de verdade — senão o
