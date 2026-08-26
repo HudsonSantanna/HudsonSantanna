@@ -12,10 +12,15 @@
 
     Uso:
       powershell -ExecutionPolicy Bypass -File .\5-diagnostico-etiquetadora.ps1
+
+    Se o endereco do Argos Estoque nao for o do padrao, passe o de verdade -
+    o preflight PNA do elo 5 e testado com ele:
+      ... -File .\5-diagnostico-etiquetadora.ps1 -Origem 'https://SEU.ENDERECO'
 #>
 [CmdletBinding()]
 param(
-    [int]   $Porta = 9110,
+    [int]   $Porta  = 9110,
+    [string]$Origem = 'https://estoque.argos.app.br',
     [string]$Saida
 )
 
@@ -265,17 +270,55 @@ $resp = $null
 try {
     $resp = Invoke-WebRequest -Uri "http://127.0.0.1:$Porta/status" -UseBasicParsing -TimeoutSec 4
 } catch { $resp = $null }
+# Le um header sem depender da caixa em que o servidor escreveu.
+function Header($Resposta, [string]$Nome) {
+    if (-not $Resposta) { return $null }
+    foreach ($k in $Resposta.Headers.Keys) {
+        if ($k -and $k.ToString().ToLower() -eq $Nome.ToLower()) { return $Resposta.Headers[$k] }
+    }
+    return $null
+}
+
 if ($resp -and $resp.StatusCode -eq 200) {
     Escrever "  /status -> HTTP 200"
     Escrever "  $($resp.Content)"
     OK '/status respondeu'
-    # cabecalho pode vir com qualquer caixa; procurar sem depender da grafia
-    $pna = $null
-    foreach ($k in $resp.Headers.Keys) {
-        if ($k -and $k.ToString().ToLower() -eq 'access-control-allow-private-network') { $pna = $resp.Headers[$k] }
+
+    # Access-Control-Allow-Private-Network so aparece na resposta ao PREFLIGHT
+    # do Chrome - um OPTIONS com Access-Control-Request-Private-Network: true.
+    # Num GET comum ele nao e esperado, entao cobrar o header aqui seria acusar
+    # falta onde nao ha. O teste certo e refazer o preflight.
+    Escrever ''
+    Escrever "  Preflight PNA com Origin: $Origem"
+    $pre = $null
+    try {
+        $pre = Invoke-WebRequest -Uri "http://127.0.0.1:$Porta/status" -Method Options `
+                 -UseBasicParsing -TimeoutSec 4 -Headers @{
+                     'Origin'                                 = $Origem
+                     'Access-Control-Request-Method'          = 'POST'
+                     'Access-Control-Request-Private-Network' = 'true'
+                 }
+    } catch {
+        $pre = $null
+        # 4xx tambem devolve resposta - ela vale mais que o texto da excecao
+        if ($_.Exception.Response) {
+            try { $pre = $_.Exception.Response } catch { $pre = $null }
+        }
     }
-    if ($pna) { OK "header Access-Control-Allow-Private-Network: $pna" }
-    else { Falta 'SEM o header Access-Control-Allow-Private-Network - o Chrome vai bloquear o site' }
+
+    if (-not $pre) {
+        Aviso 'TESTE NAO REALIZADO (isto nao e uma falta): o agente nao respondeu ao preflight OPTIONS'
+        Aviso 'Nem todo agente responde OPTIONS fora do navegador. Confira o elo 6 no Chrome.'
+    } else {
+        $pna    = Header $pre 'Access-Control-Allow-Private-Network'
+        $origem = Header $pre 'Access-Control-Allow-Origin'
+        if ($origem) { Escrever "  Access-Control-Allow-Origin ..............: $origem" }
+        if ($pna) {
+            OK "header Access-Control-Allow-Private-Network: $pna"
+        } else {
+            Falta "preflight respondeu SEM Access-Control-Allow-Private-Network - o Chrome bloqueia a chamada de $Origem"
+        }
+    }
 } else {
     Falta "/status nao respondeu em 127.0.0.1:$Porta"
 }

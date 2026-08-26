@@ -59,7 +59,15 @@ Roda em segundos. Ao final salva na Área de Trabalho um arquivo
 | Parâmetro | Padrão | Para que serve |
 |---|---|---|
 | `-Porta` | `9110` | Porta do agente ArgosPrint, se um dia mudar |
+| `-Origem` | `https://estoque.argos.app.br` | Endereço do Argos Estoque, usado no preflight PNA do elo 5 |
 | `-Saida` | Área de Trabalho | Caminho do relatório |
+
+Se o endereço do Argos Estoque não for o do padrão, passe o de verdade — senão o
+teste de PNA pergunta por uma origem que o agente não conhece:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\5-diagnostico-etiquetadora.ps1 -Origem 'https://SEU.ENDERECO'
+```
 
 ## Como ler o relatório
 
@@ -101,6 +109,11 @@ do antigo.
 - **`impressora_argos.txt` vazio** conta como ausente: o agente cai no padrão
   `\\localhost\BXS`, que nesta máquina está errado — aqui a fila é
   `ARGOS - Codigo Estoque`
-- **Cabeçalho `Access-Control-Allow-Private-Network`** na resposta do `/status`:
-  sem ele o Chrome bloqueia a chamada, mesmo com o agente rodando perfeitamente
+- **Cabeçalho `Access-Control-Allow-Private-Network`**: sem ele o Chrome bloqueia
+  a chamada, mesmo com o agente rodando perfeitamente. Esse cabeçalho só aparece
+  na resposta ao **preflight** (um `OPTIONS` com
+  `Access-Control-Request-Private-Network: true`), nunca num `GET` comum — por
+  isso o script refaz o preflight em vez de cobrar o cabeçalho na resposta do
+  `/status`. Agente que não responde a `OPTIONS` fora do navegador vira
+  `[!] TESTE NAO REALIZADO`, não `[FALTA]`
 - **Driver `Generic / Text Only`**: sem ele não existe caminho ZPL/RAW
