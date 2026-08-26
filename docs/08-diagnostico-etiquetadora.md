@@ -94,6 +94,40 @@ await ArgosPrint.disponivel()      // tem que dar true
 
 e o selo verde **"Etiquetadora conectada"** aparecendo na tela.
 
+## Dar nome próprio às duas BIXOLON
+
+As duas se chamam `BIXOLON XD3-40t - BPL` e `BIXOLON XD3-40t - BPL-Z #2` — só
+diferem por um sufixo de driver. Na hora do `Ctrl+P` a escolha vira palpite, e a
+etiqueta sai na impressora errada. O `scripts/windows/7-nomear-impressoras.ps1`
+troca esses nomes por `Codigo de Barra` e `Etiqueta Fiscal`.
+
+**Identifique antes de renomear.** Sem número de série, o Windows só distingue as
+duas pela porta USB — e porta USB troca de lugar. Nomear por palpite grava o erro
+em vez de corrigi-lo.
+
+```powershell
+# 1. manda um papel por fila, com o nome da fila impresso. Não altera nada.
+powershell -ExecutionPolicy Bypass -File .\7-nomear-impressoras.ps1 -Identificar
+
+# 2. com os dois papéis na mão, renomeia
+powershell -ExecutionPolicy Bypass -File .\7-nomear-impressoras.ps1 `
+    -DeCodigoDeBarra 'BIXOLON XD3-40t - BPL-Z #2' `
+    -DeEtiquetaFiscal 'BIXOLON XD3-40t - BPL' -Confirmar
+```
+
+Sem `-Confirmar` ele só mostra o plano. Recusa renomear fila com job pendente
+(renomear aí perde o trabalho de alguém) e recusa dois nomes novos iguais.
+
+Renomear troca só o rótulo, **não** o caminho: a porta USB continua a mesma. Se
+alguém mudar os cabos de porta, o nome passa a mentir — identifique de novo.
+
+Depois disso o `6-configurar-etiquetadora.ps1` fica direto, e a proteção da fiscal
+passa a funcionar sozinha, porque `Etiqueta Fiscal` casa com a regra do nome:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\6-configurar-etiquetadora.ps1 -ImpressoraEstoque 'Codigo de Barra'
+```
+
 ## Configurar (depois de ler o relatório)
 
 O `scripts/windows/6-configurar-etiquetadora.ps1` monta o caminho ZPL/RAW: limpa
@@ -146,6 +180,8 @@ impressora existente entra na jogada.
 | Parâmetro | Padrão | Para que serve |
 |---|---|---|
 | `-Confirmar` | desligado | Sem ele, só mostra o plano |
+| `-ImpressoraEstoque` | descoberta | Nome da impressora existente cuja porta é a do estoque |
+| `-Proteger` | — | Nomes que nunca devem ser tocados, além da fiscal e da padrão |
 | `-PortaUsb` | descoberta | Força a porta (`USB001`, `USB002`) |
 | `-FilaArgos` | `ARGOS - Codigo Estoque` | Nome e compartilhamento da fila |
 | `-SemTeste` | desligado | Não manda a etiqueta de teste |

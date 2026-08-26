@@ -21,15 +21,17 @@
     Uso:
       powershell -ExecutionPolicy Bypass -File .\6-configurar-etiquetadora.ps1
       powershell -ExecutionPolicy Bypass -File .\6-configurar-etiquetadora.ps1 -Confirmar
-      powershell -ExecutionPolicy Bypass -File .\6-configurar-etiquetadora.ps1 -Confirmar -PortaUsb USB002
+      powershell -ExecutionPolicy Bypass -File .\6-configurar-etiquetadora.ps1 -ImpressoraEstoque "BIXOLON XD3-40t - BPL-Z #2" -Confirmar
 #>
 [CmdletBinding()]
 param(
-    [string]$FilaArgos   = 'ARGOS - Codigo Estoque',
-    [string]$PortaUsb,
-    [int]   $PortaAgente = 9110,
-    [switch]$Confirmar,
-    [switch]$SemTeste
+    [string]  $FilaArgos   = 'ARGOS - Codigo Estoque',
+    [string]  $ImpressoraEstoque,
+    [string[]]$Proteger    = @(),
+    [string]  $PortaUsb,
+    [int]     $PortaAgente = 9110,
+    [switch]  $Confirmar,
+    [switch]  $SemTeste
 )
 
 $ErrorActionPreference = 'Stop'
@@ -103,7 +105,22 @@ foreach ($p in $todas) {
     Write-Host ("  {0,-38} porta={1,-10} driver={2}" -f $p.Name, $p.PortName, $p.DriverName)
 }
 
-$intocaveis = @($todas | Where-Object { $_.Name -match 'fiscal' -or $_.ShareName -match 'fiscal' })
+# Procurar "fiscal" no nome nao protege nada: nesta instalacao a impressora que
+# tira a etiqueta de nota fiscal se chama 'BIXOLON XD3-40t - BPL'. Entao a lista
+# de intocaveis nao depende so do nome - entra tambem a impressora PADRAO do
+# Windows e tudo que vier em -Proteger.
+$intocaveis = @($todas | Where-Object {
+    $_.Name -match 'fiscal' -or $_.ShareName -match 'fiscal' -or ($Proteger -contains $_.Name)
+})
+$padrao = @(Get-CimInstance Win32_Printer -ErrorAction SilentlyContinue | Where-Object { $_.Default })
+if ($padrao.Count -gt 0) {
+    $nomePadrao = $padrao[0].Name
+    if ($nomePadrao -ne $ImpressoraEstoque -and
+        (@($intocaveis | ForEach-Object { $_.Name }) -notcontains $nomePadrao)) {
+        $obj = @($todas | Where-Object { $_.Name -eq $nomePadrao })
+        if ($obj.Count -gt 0) { $intocaveis += $obj[0] }
+    }
+}
 if ($intocaveis.Count -gt 0) {
     Write-Host ''
     foreach ($f in $intocaveis) { Aviso "INTOCAVEL: $($f.Name)  (porta $($f.PortName))" }
@@ -117,25 +134,46 @@ $bixolons = @($todas | Where-Object {
     ($nomesIntocaveis -notcontains $_.Name)
 })
 
-$porta = $null
-if ($PortaUsb) {
+$porta   = $null
+$estoque = $null
+if ($ImpressoraEstoque) {
+    $achada = @($todas | Where-Object { $_.Name -eq $ImpressoraEstoque })
+    if ($achada.Count -eq 0) {
+        Erro "nao existe impressora chamada '$ImpressoraEstoque' nesta maquina"
+        Write-Host '  Os nomes disponiveis estao na lista do item 1, copiados exatamente como aparecem.'
+        exit 1
+    }
+    if (@($intocaveis | ForEach-Object { $_.Name }) -contains $ImpressoraEstoque) {
+        Erro "'$ImpressoraEstoque' esta na lista de intocaveis - recusando"
+        exit 1
+    }
+    $estoque = $achada[0]
+    $porta   = $estoque.PortName
+    OK "impressora de estoque indicada: $($estoque.Name) -> porta $porta"
+} elseif ($PortaUsb) {
     $porta = $PortaUsb
     OK "porta forcada por -PortaUsb: $porta"
 } elseif ($bixolons.Count -eq 1) {
-    $porta = $bixolons[0].PortName
-    OK "uma unica BIXOLON nao-fiscal: $($bixolons[0].Name) -> porta $porta"
+    $estoque = $bixolons[0]
+    $porta   = $estoque.PortName
+    OK "uma unica BIXOLON fora da lista de intocaveis: $($estoque.Name) -> porta $porta"
 } elseif ($bixolons.Count -eq 0) {
     Erro 'nenhuma BIXOLON nao-fiscal instalada - nao da para deduzir a porta'
     Write-Host '  Rode com -PortaUsb USB001 (ou USB002) depois de conferir qual e qual.'
     exit 1
 } else {
-    Aviso "$($bixolons.Count) BIXOLON nao-fiscais - nao da para adivinhar qual e a do estoque:"
+    Aviso "$($bixolons.Count) BIXOLON candidatas - nao da para adivinhar qual e a do estoque:"
     foreach ($b in $bixolons) { Write-Host ("     {0,-38} porta={1}" -f $b.Name, $b.PortName) }
     Write-Host ''
-    Write-Host '  Escolha a porta e rode de novo, por exemplo:'
-    Write-Host "     .\6-configurar-etiquetadora.ps1 -Confirmar -PortaUsb $($bixolons[0].PortName)"
-    Write-Host '  Se a etiqueta de teste sair na impressora errada, rode com a outra porta:'
-    Write-Host '  o script so troca a porta da fila NOVA, nunca a das que ja existem.'
+    Write-Host '  Diga qual e a do ESTOQUE (a que NAO tira etiqueta de nota fiscal),'
+    Write-Host '  copiando o nome exatamente como aparece acima:'
+    Write-Host "     .\6-configurar-etiquetadora.ps1 -ImpressoraEstoque `"$($bixolons[0].Name)`""
+    Write-Host ''
+    Write-Host '  E proteja explicitamente a da nota fiscal:'
+    Write-Host "     ... -Proteger `"$($bixolons[0].Name)`""
+    Write-Host ''
+    Write-Host '  Se a etiqueta de teste sair na impressora errada, rode de novo com a outra:'
+    Write-Host '  o script so mexe na fila NOVA, nunca nas que ja existem.'
     exit 1
 }
 
@@ -148,18 +186,26 @@ if ($porta -and ($intocaveis | Where-Object { $_.PortName -eq $porta })) {
 
 # ------------------------------------------------------------ 3. job preso
 Titulo '3. JOB PRESO'
-$limpou = $false
-foreach ($b in $bixolons) {
-    $jobs = @(Get-PrintJob -PrinterName $b.Name -ErrorAction SilentlyContinue)
-    if ($jobs.Count -eq 0) { Write-Host "  $($b.Name): fila vazia"; continue }
-    Write-Host "  $($b.Name): $($jobs.Count) job(s) preso(s)"
-    foreach ($j in $jobs) { Write-Host ("     id {0}  {1}  enviado {2}" -f $j.Id, $j.JobStatus, $j.SubmittedTime) }
-    $nome = $b.Name
-    $limpou = (Fazer "apagar $($jobs.Count) job(s) preso(s) de '$nome'" {
-        Get-PrintJob -PrinterName $nome | Remove-PrintJob
-    }) -or $limpou
+# Apagar job e destrutivo e nao tem volta: um job apagado na fila da nota fiscal
+# e uma etiqueta de envio que ninguem imprimiu e ninguem sabe que faltou. Entao
+# so acontece na fila que foi IDENTIFICADA como a do estoque - nunca varrendo
+# todas as BIXOLON.
+if (-not $estoque) {
+    Aviso 'fila do estoque nao identificada com certeza - limpeza pulada'
+    Aviso 'Passe -ImpressoraEstoque "<nome>" para eu apagar job preso da fila certa.'
+} else {
+    $jobs = @(Get-PrintJob -PrinterName $estoque.Name -ErrorAction SilentlyContinue)
+    if ($jobs.Count -eq 0) {
+        Write-Host "  $($estoque.Name): fila vazia"
+    } else {
+        Write-Host "  $($estoque.Name): $($jobs.Count) job(s) preso(s)"
+        foreach ($j in $jobs) { Write-Host ("     id {0}  {1}  enviado {2}" -f $j.Id, $j.JobStatus, $j.SubmittedTime) }
+        $nome = $estoque.Name
+        [void](Fazer "apagar $($jobs.Count) job(s) preso(s) de '$nome'" {
+            Get-PrintJob -PrinterName $nome | Remove-PrintJob
+        })
+    }
 }
-if (-not $limpou -and $Confirmar) { OK 'nada preso para apagar' }
 
 # ------------------------------------------------------- 4. driver Generic/Text
 Titulo '4. DRIVER Generic / Text Only'

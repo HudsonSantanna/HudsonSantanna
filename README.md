@@ -59,11 +59,13 @@ sudo /home/partimag/scripts/restaurar-maquina.sh       # grava em outra máquina
 | `scripts/windows/3-mover-para-hd.ps1` | Windows     | Copia para HD externo, confere e só então apaga a origem |
 | `scripts/windows/5-diagnostico-etiquetadora.ps1` | Windows (estoque) | Diagnóstico somente leitura da etiquetadora BIXOLON, do agente ArgosPrint e da pistola |
 | `scripts/windows/6-configurar-etiquetadora.ps1` | Windows (estoque) | Monta o caminho ZPL/RAW: fila `Generic / Text Only`, compartilhamento e `impressora_argos.txt` (mostra o plano; aplica com `-Confirmar`) |
+| `scripts/windows/7-nomear-impressoras.ps1` | Windows (estoque) | Identifica cada BIXOLON imprimindo o próprio nome e renomeia para `Codigo de Barra` / `Etiqueta Fiscal` |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada) —
 menos os dois da etiquetadora: o `5-diagnostico-etiquetadora.ps1` é somente
 leitura por natureza e não tem o que simular, e o `6-configurar-etiquetadora.ps1`
-já mostra o plano por padrão — aplica só com `-Confirmar`.
+já mostra o plano por padrão — aplica só com `-Confirmar`, igual ao
+`7-nomear-impressoras.ps1`.
 
 ## Documentação
 
