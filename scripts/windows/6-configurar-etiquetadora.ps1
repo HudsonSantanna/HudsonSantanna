@@ -393,7 +393,7 @@ public class DOCINFO {
     [MarshalAs(UnmanagedType.LPTStr)] public string pOutputFile = null;
     [MarshalAs(UnmanagedType.LPTStr)] public string pDataType = "RAW";
 }
-'@ -UsingNamespace 'System.Runtime.InteropServices'
+'@
         }
         $h = [IntPtr]::Zero
         if (-not [Argos.RawPrinterNative]::OpenPrinter($FilaArgos, [ref]$h, [IntPtr]::Zero)) {
