@@ -33,10 +33,19 @@ param(
     [switch]$Forcar,
     [string]$Servidor    = 'KHAOSOMNI',
     [string]$Checkpoints = 'C:\Argos-Backups\_checkpoints',
-    [string]$Log = "$env:USERPROFILE\Desktop\atualizar-claude-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Log
 )
 
 $ErrorActionPreference = 'Stop'
+
+# A Area de Trabalho nem sempre e "$env:USERPROFILE\Desktop": com OneDrive ela
+# vira "...\OneDrive\Area de Trabalho" e aquele caminho NAO existe. Perguntar ao
+# Windows onde ela esta de verdade, e cair no perfil do usuario se nem isso der.
+if (-not $Log) {
+    $desk = [Environment]::GetFolderPath('Desktop')
+    if (-not $desk -or -not (Test-Path -LiteralPath $desk)) { $desk = $env:USERPROFILE }
+    $Log = Join-Path $desk "atualizar-claude-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+}
 
 $script:Linhas    = New-Object System.Collections.ArrayList
 $script:Problemas = New-Object System.Collections.ArrayList

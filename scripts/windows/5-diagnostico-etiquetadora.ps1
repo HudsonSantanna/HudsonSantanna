@@ -17,10 +17,19 @@
 [CmdletBinding()]
 param(
     [int]   $Porta = 9110,
-    [string]$Saida = "$env:USERPROFILE\Desktop\diagnostico-etiquetadora-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Saida
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
+
+# A Area de Trabalho nem sempre e "$env:USERPROFILE\Desktop": com OneDrive ela
+# vira "...\OneDrive\Area de Trabalho" e aquele caminho NAO existe. Perguntar ao
+# Windows onde ela esta de verdade, e cair no perfil do usuario se nem isso der.
+if (-not $Saida) {
+    $desk = [Environment]::GetFolderPath('Desktop')
+    if (-not $desk -or -not (Test-Path -LiteralPath $desk)) { $desk = $env:USERPROFILE }
+    $Saida = Join-Path $desk "diagnostico-etiquetadora-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+}
 $script:Linhas = New-Object System.Collections.ArrayList
 $script:Faltas = New-Object System.Collections.ArrayList
 
