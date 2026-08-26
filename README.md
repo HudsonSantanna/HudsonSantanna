@@ -58,10 +58,12 @@ sudo /home/partimag/scripts/restaurar-maquina.sh       # grava em outra máquina
 | `scripts/windows/2-limpeza.ps1`       | Windows     | Libera caches e temporários (simula por padrão) |
 | `scripts/windows/3-mover-para-hd.ps1` | Windows     | Copia para HD externo, confere e só então apaga a origem |
 | `scripts/windows/5-diagnostico-etiquetadora.ps1` | Windows (estoque) | Diagnóstico somente leitura da etiquetadora BIXOLON, do agente ArgosPrint e da pistola |
+| `scripts/windows/6-configurar-etiquetadora.ps1` | Windows (estoque) | Monta o caminho ZPL/RAW: fila `Generic / Text Only`, compartilhamento e `impressora_argos.txt` (mostra o plano; aplica com `-Confirmar`) |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada) —
-menos o `5-diagnostico-etiquetadora.ps1`, que é somente leitura por natureza e não
-tem o que simular; ele aceita `-Porta` e `-Saida`.
+menos os dois da etiquetadora: o `5-diagnostico-etiquetadora.ps1` é somente
+leitura por natureza e não tem o que simular, e o `6-configurar-etiquetadora.ps1`
+já mostra o plano por padrão — aplica só com `-Confirmar`.
 
 ## Documentação
 

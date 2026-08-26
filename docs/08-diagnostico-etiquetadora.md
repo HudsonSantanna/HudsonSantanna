@@ -94,6 +94,68 @@ await ArgosPrint.disponivel()      // tem que dar true
 
 e o selo verde **"Etiquetadora conectada"** aparecendo na tela.
 
+## Configurar (depois de ler o relatório)
+
+O `scripts/windows/6-configurar-etiquetadora.ps1` monta o caminho ZPL/RAW: limpa
+job preso, cria a fila `Generic / Text Only` na porta da BIXOLON de estoque,
+compartilha como `ARGOS - Codigo Estoque`, grava o `impressora_argos.txt` ao lado
+do `ArgosPrint.exe`, reinicia o agente e manda uma etiqueta de teste.
+
+**Por padrão ele só mostra o plano.** Para aplicar, `-Confirmar`. Precisa de
+PowerShell como Administrador.
+
+```powershell
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+$pasta = [Environment]::GetFolderPath('Desktop')
+if (-not $pasta -or -not (Test-Path -LiteralPath $pasta)) { $pasta = $env:USERPROFILE }
+Set-Location -LiteralPath $pasta
+iwr 'https://raw.githubusercontent.com/HudsonSantanna/HudsonSantanna/main/scripts/windows/6-configurar-etiquetadora.ps1' -OutFile 6-configurar-etiquetadora.ps1 -UseBasicParsing
+Unblock-File .\6-configurar-etiquetadora.ps1
+powershell -ExecutionPolicy Bypass -File .\6-configurar-etiquetadora.ps1
+```
+
+### A impressora fiscal não é tocada
+
+Isto não é uma promessa de comportamento, é como o script foi construído: ele
+**não altera nenhuma impressora que já exista** na máquina. Tudo o que escreve
+acontece numa fila **nova**, criada por ele. A única exceção é apagar job preso —
+e só em fila BIXOLON que não seja fiscal.
+
+A trava importa porque as duas BIXOLON desta instalação **não têm número de
+série** (uma reporta `0000000000000001`, a outra nenhum). Sem serial, o Windows
+só as distingue pela porta USB — e porta USB troca de lugar quando alguém muda o
+cabo ou liga as duas numa ordem diferente. Script que "adivinha" qual é qual
+acaba reconfigurando a fiscal no meio do despacho.
+
+Se o script achar mais de uma BIXOLON não-fiscal, ele **para e pergunta** em vez
+de escolher. E se a porta indicada for a da fiscal, ele recusa.
+
+### Se a etiqueta de teste sair na impressora errada
+
+Rode de novo com a outra porta:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\6-configurar-etiquetadora.ps1 -Confirmar -PortaUsb USB002
+```
+
+Só a fila nova muda de porta. É reversível quantas vezes precisar, e nenhuma
+impressora existente entra na jogada.
+
+### Parâmetros
+
+| Parâmetro | Padrão | Para que serve |
+|---|---|---|
+| `-Confirmar` | desligado | Sem ele, só mostra o plano |
+| `-PortaUsb` | descoberta | Força a porta (`USB001`, `USB002`) |
+| `-FilaArgos` | `ARGOS - Codigo Estoque` | Nome e compartilhamento da fila |
+| `-SemTeste` | desligado | Não manda a etiqueta de teste |
+
+### Depois
+
+Confira com os olhos que a etiqueta `ARGOS TESTE` saiu na etiquetadora do
+estoque, prove o elo 6 no Chrome e rode o `5-diagnostico-etiquetadora.ps1` de
+novo para o relatório final.
+
 ## Antes de instalar qualquer coisa
 
 **Mande o arquivo inteiro.** Ele foi feito para caber numa mensagem e responder
