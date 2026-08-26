@@ -192,6 +192,53 @@ Confira com os olhos que a etiqueta `ARGOS TESTE` saiu na etiquetadora do
 estoque, prove o elo 6 no Chrome e rode o `5-diagnostico-etiquetadora.ps1` de
 novo para o relatório final.
 
+## O caso da HUDSONINTEGRAR (26/08/2026)
+
+Vale como referência porque as duas falhas envolvidas **não dão erro nenhum**.
+
+O Argos Estoque exibia o selo verde *Etiquetadora conectada* e, a cada clique,
+respondia `✅ 2 etiqueta(s) impressa(s) na etiquetadora`. Nada saía. O agente
+estava certo, o navegador estava certo, e mesmo assim não havia papel.
+
+A lista de impressoras contava a história:
+
+```
+ARGOS - Codigo Estoque             porta=LPT3:    driver=BIXOLON XD3-40t - BPL-Z
+BIXOLON XD3-40t - BPL-Z            porta=USB002   driver=BIXOLON XD3-40t - BPL-Z
+BIXOLON XD3-40t - BPL-Z #2         porta=LPT3:    driver=BIXOLON XD3-40t - BPL-Z
+BIXOLON XD3-40t - BPL-Z (Copiar 1) porta=USB005   driver=BIXOLON XD3-40t - BPL-Z
+BIXOLON XD3-40t - BPL-Z (Copiar 2) porta=USB001   driver=BIXOLON XD3-40t - BPL-Z
+```
+
+**A fila existia e apontava para `LPT3:`** — uma porta paralela que a máquina não
+tem. Fila em porta morta aceita o trabalho, o spooler não reclama, o agente
+recebe OK e o site anuncia sucesso. O papel simplesmente não existe em lugar
+nenhum. Só duas das cinco portas tinham impressora ligada: `USB001` e `USB002`;
+`LPT3:` e `USB005` eram restos de instalações antigas.
+
+**E o driver era o da BIXOLON, não o `Generic / Text Only`.** Mesmo na porta
+certa, o ZPL cru teria passado por um driver que tenta renderizá-lo como
+documento — etiqueta em branco ou embolada.
+
+Duas falhas somadas, nenhuma delas com mensagem de erro. Por isso o
+`6-configurar-etiquetadora.ps1` hoje **recusa** porta sem impressora ligada (ele
+lê o `instance id` de cada `USBPRINT`, que termina no nome da porta) e corrige o
+driver de fila que já existe, não só a porta.
+
+A correção final foi uma linha:
+
+```powershell
+.\6-configurar-etiquetadora.ps1 -PortaUsb USB002 -Confirmar
+```
+
+### O que sobrou para limpar
+
+`BIXOLON XD3-40t - BPL-Z #2` (`LPT3:`) e `BIXOLON XD3-40t - BPL-Z (Copiar 1)`
+(`USB005`) são filas órfãs apontando para portas mortas. Elas não quebram nada
+sozinhas, mas é delas que vem a confusão: aparecem no `Ctrl+P` com nome quase
+idêntico ao das boas, e trabalho enviado para elas some calado. Remover é
+decisão de quem opera — confira antes que nenhuma tem job pendente.
+
 ## Antes de instalar qualquer coisa
 
 **Mande o arquivo inteiro.** Ele foi feito para caber numa mensagem e responder
