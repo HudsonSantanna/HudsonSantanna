@@ -350,9 +350,13 @@ if ($proc.Count -eq 0) {
         Aviso 'nao consegui descobrir o caminho do ArgosPrint.exe em execucao'
         Aviso 'Feche e abra o agente a mao - senao ele segue com o destino antigo.'
     } else {
-        $pid0 = $proc[0].Id
-        [void](Fazer "encerrar ArgosPrint (PID $pid0) e subir de novo" {
-            Stop-Process -Id $pid0 -Force
+        # Encerrar TODAS as instancias, nao so a primeira: cada execucao deste
+        # script subia mais uma e deixava as antigas vivas. Sobra um bando de
+        # ArgosPrint disputando a 9110 - uma ganha, as outras ficam de enfeite,
+        # e nao da para saber qual respondeu o /status.
+        $ids = @($proc | ForEach-Object { $_.Id })
+        [void](Fazer "encerrar $($ids.Count) instancia(s) do ArgosPrint (PID $($ids -join ', ')) e subir UMA" {
+            foreach ($i in $ids) { Stop-Process -Id $i -Force -ErrorAction SilentlyContinue }
             Start-Sleep -Seconds 2
             Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe -Parent)
         })
