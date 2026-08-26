@@ -17,25 +17,37 @@
 #>
 [CmdletBinding()]
 param(
-    [string[]]$Caminho
+    [string[]]$Caminho,
+    [string]  $Saida
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
 
-function Titulo([string]$T) {
-    Write-Host ''
-    Write-Host ('=' * 72)
-    Write-Host "  $T"
-    Write-Host ('=' * 72)
+if (-not $Saida) {
+    $desk = [Environment]::GetFolderPath('Desktop')
+    if (-not $desk -or -not (Test-Path -LiteralPath $desk)) { $desk = $env:USERPROFILE }
+    $Saida = Join-Path $desk "verificar-executavel-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
 }
-function OK([string]$T)    { Write-Host "  [OK]     $T" }
-function Falta([string]$T) { Write-Host "  [PROBLEMA] $T" }
-function Aviso([string]$T) { Write-Host "  [!]      $T" }
-function Linha([string]$T) { Write-Host "  $T" }
+$script:Linhas = New-Object System.Collections.ArrayList
 
-Write-Host ''
-Write-Host "ARGOS - por que o programa nao executa  $(Get-Date -Format 'dd/MM/yyyy HH:mm')"
-Write-Host 'SOMENTE LEITURA - nada nesta maquina e alterado por este script.'
+function Reg([string]$T = '') {
+    Write-Host $T
+    [void]$script:Linhas.Add($T)
+}
+function Titulo([string]$T) {
+    Reg ''
+    Reg ('=' * 72)
+    Reg "  $T"
+    Reg ('=' * 72)
+}
+function OK([string]$T)    { Reg "  [OK]     $T" }
+function Falta([string]$T) { Reg "  [PROBLEMA] $T" }
+function Aviso([string]$T) { Reg "  [!]      $T" }
+function Linha([string]$T) { Reg "  $T" }
+
+Reg ''
+Reg "ARGOS - por que o programa nao executa  $(Get-Date -Format 'dd/MM/yyyy HH:mm')"
+Reg 'SOMENTE LEITURA - nada nesta maquina e alterado por este script.'
 
 # ------------------------------------------------------------- 0. esta maquina
 Titulo '0. ESTA MAQUINA'
@@ -68,14 +80,14 @@ if (-not $Caminho -or $Caminho.Count -eq 0) {
 
     if ($Caminho.Count -eq 0) {
         Titulo 'NENHUM ARQUIVO PARA CONFERIR'
-        Write-Host '  Nao achei o ArgosPrint.exe nos lugares conhecidos, e voce nao informou'
-        Write-Host '  um caminho. Rode apontando para o programa que da a mensagem:'
-        Write-Host ''
-        Write-Host "     .\8-verificar-executavel.ps1 -Caminho 'C:\caminho\do\programa.exe'"
-        Write-Host ''
-        Write-Host '  Para descobrir o caminho: clique com o botao direito no atalho que'
-        Write-Host '  falha -> Propriedades -> campo "Destino".'
-        Write-Host ''
+        Reg '  Nao achei o ArgosPrint.exe nos lugares conhecidos, e voce nao informou'
+        Reg '  um caminho. Rode apontando para o programa que da a mensagem:'
+        Reg ''
+        Reg "     .\8-verificar-executavel.ps1 -Caminho 'C:\caminho\do\programa.exe'"
+        Reg ''
+        Reg '  Para descobrir o caminho: clique com o botao direito no atalho que'
+        Reg '  falha -> Propriedades -> campo "Destino".'
+        Reg ''
         exit 0
     }
     Aviso "nenhum -Caminho informado; conferindo o(s) $($Caminho.Count) executavel(is) conhecido(s)"
@@ -313,18 +325,37 @@ if ($def) {
 
 # -------------------------------------------------------------------- resumo
 Titulo 'COMO LER ISTO'
-Write-Host '  "Este aplicativo nao pode ser executado em seu PC" nao diz o motivo.'
-Write-Host '  Os motivos, na ordem em que aparecem na pratica:'
-Write-Host ''
-Write-Host '  1. Programa de 64 bits num Windows de 32 bits (ou ARM x Intel)'
-Write-Host '     -> a secao do arquivo acima mostra "INCOMPATIVEL"'
-Write-Host '  2. Download interrompido: arquivo vazio, truncado, ou sem "MZ"'
-Write-Host '     -> baixar de novo resolve'
-Write-Host '  3. Nao e programa: DLL, instalador pela metade, pagina de erro salva como .exe'
-Write-Host '  4. Bloqueio por politica: AppLocker, WDAC ou Smart App Control'
-Write-Host '     -> aqui o que decide e a ASSINATURA DIGITAL, nao a arquitetura;'
-Write-Host '        veja a linha "Assinatura" do arquivo e a secao de politica'
-Write-Host ''
-Write-Host '  Se tudo acima estiver [OK] e a mensagem persistir, mande este relatorio'
-Write-Host '  inteiro junto com o nome do programa e de onde ele foi baixado.'
+Reg '  "Este aplicativo nao pode ser executado em seu PC" nao diz o motivo.'
+Reg '  Os motivos, na ordem em que aparecem na pratica:'
+Reg ''
+Reg '  1. Programa de 64 bits num Windows de 32 bits (ou ARM x Intel)'
+Reg '     -> a secao do arquivo acima mostra "INCOMPATIVEL"'
+Reg '  2. Download interrompido: arquivo vazio, truncado, ou sem "MZ"'
+Reg '     -> baixar de novo resolve'
+Reg '  3. Nao e programa: DLL, instalador pela metade, pagina de erro salva como .exe'
+Reg '  4. Bloqueio por politica: AppLocker, WDAC ou Smart App Control'
+Reg '     -> aqui o que decide e a ASSINATURA DIGITAL, nao a arquitetura;'
+Reg '        veja a linha "Assinatura" do arquivo e a secao de politica'
+Reg ''
+Reg '  Se tudo acima estiver [OK] e a mensagem persistir, mande este relatorio'
+Reg '  inteiro junto com o nome do programa e de onde ele foi baixado.'
+Reg ''
+
+$alvos = New-Object System.Collections.ArrayList
+[void]$alvos.Add($Saida)
+if ($env:TEMP) { [void]$alvos.Add((Join-Path $env:TEMP (Split-Path $Saida -Leaf))) }
+$gravado = $null
+foreach ($alvo in $alvos) {
+    try {
+        $script:Linhas | Set-Content -LiteralPath $alvo -Encoding UTF8 -ErrorAction Stop
+        $gravado = $alvo
+        break
+    } catch { continue }
+}
+if ($gravado) {
+    Write-Host "  Relatorio salvo em: $gravado"
+    Write-Host '  MANDE O ARQUIVO INTEIRO - a parte que decide fica no comeco e sai da tela.'
+} else {
+    Write-Host '  NAO consegui salvar em arquivo - role a tela para cima e copie desde o inicio.'
+}
 Write-Host ''
