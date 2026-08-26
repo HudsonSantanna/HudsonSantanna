@@ -91,6 +91,7 @@ servidor. Protocolos suportados: SSH (sshfs), NFS e SMB.
 | `scripts/windows/2-limpeza.ps1`       | Windows     | Libera caches e temporários (simula por padrão) |
 | `scripts/windows/3-mover-para-hd.ps1` | Windows     | Copia para HD externo, confere e só então apaga a origem |
 | `scripts/windows/4-etiquetas-argos.ps1` | Windows   | Radiografia da impressora de etiquetas, do agente Argos Print e do leitor |
+| `scripts/windows/5-quarentena-hd.ps1` | Windows     | Manda para o HD o que não é usado na máquina: copia, confere SHA-256 e só então apaga |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada).
 
@@ -104,7 +105,8 @@ Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nad
 6. [Manutenção da máquina no Windows](docs/06-manutencao-windows.md)
 7. [Imagens no servidor (rede do escritório)](docs/07-imagens-no-servidor.md)
 8. [Estação de etiquetas: Bixolon + Argos Print](docs/08-etiquetas-argos-print.md)
-9. [Checklist de campo](docs/checklist.md)
+9. [Liberar espaço da máquina mandando para o HD](docs/09-liberar-espaco-com-hd.md)
+10. [Checklist de campo](docs/checklist.md)
 
 ## Requisitos
 

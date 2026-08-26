@@ -23,10 +23,13 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function ComoGB($Bytes) { '{0,8:N2} GB' -f ($Bytes / 1GB) }
+# Nao conta arquivo que esta so na nuvem (0x400000): tamanho logico nao e
+# espaco ocupado.
 function TamanhoPasta([string]$Caminho) {
-    $s = (Get-ChildItem -LiteralPath $Caminho -Recurse -File -Force -ErrorAction SilentlyContinue |
-            Measure-Object -Property Length -Sum).Sum
-    if ($null -eq $s) { [int64]0 } else { [int64]$s }
+    $total = [int64]0
+    Get-ChildItem -LiteralPath $Caminho -Recurse -File -Force -ErrorAction SilentlyContinue |
+        ForEach-Object { if ((([int]$_.Attributes) -band 0x400000) -eq 0) { $total += $_.Length } }
+    return $total
 }
 
 if (-not (Test-Path -LiteralPath $Origem)) { throw "Origem nao encontrada: $Origem" }

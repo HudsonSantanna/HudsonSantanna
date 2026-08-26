@@ -34,11 +34,14 @@ function EhAdmin {
     (New-Object Security.Principal.WindowsPrincipal $id).IsInRole(
         [Security.Principal.WindowsBuiltInRole]::Administrator)
 }
+# Ignora arquivo que so existe na nuvem (0x400000): ele conta no tamanho
+# logico mas nao ocupa disco nenhum aqui.
 function TamanhoPasta([string]$Caminho) {
     if (-not (Test-Path -LiteralPath $Caminho)) { return [int64]0 }
-    $s = (Get-ChildItem -LiteralPath $Caminho -Recurse -File -Force |
-            Measure-Object -Property Length -Sum).Sum
-    if ($null -eq $s) { [int64]0 } else { [int64]$s }
+    $total = [int64]0
+    Get-ChildItem -LiteralPath $Caminho -Recurse -File -Force |
+        ForEach-Object { if ((([int]$_.Attributes) -band 0x400000) -eq 0) { $total += $_.Length } }
+    return $total
 }
 
 function LimparPasta([string]$Nome, [string]$Caminho) {

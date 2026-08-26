@@ -94,10 +94,15 @@ if ($discos) {
 
 # --------------------------------------------------- espaco recuperavel
 Titulo 'ESPACO RECUPERAVEL (candidatos a limpeza)'
+# Arquivo do OneDrive que esta so na nuvem tem tamanho logico mas NAO ocupa
+# disco (atributo FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS = 0x400000). Contar esses
+# ja fez "49,5 GB de OneDrive" que na verdade eram 8,89 GB.
 function TamanhoPasta([string]$Caminho) {
     if (-not (Test-Path -LiteralPath $Caminho)) { return $null }
-    (Get-ChildItem -LiteralPath $Caminho -Recurse -File -Force |
-        Measure-Object -Property Length -Sum).Sum
+    $total = [int64]0
+    Get-ChildItem -LiteralPath $Caminho -Recurse -File -Force |
+        ForEach-Object { if ((([int]$_.Attributes) -band 0x400000) -eq 0) { $total += $_.Length } }
+    return $total
 }
 $candidatos = [ordered]@{
     'Lixeira'                  = "$Unidade\`$Recycle.Bin"
