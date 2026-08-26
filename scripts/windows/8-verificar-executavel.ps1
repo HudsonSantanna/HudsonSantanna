@@ -79,6 +79,31 @@ if (-not $Caminho -or $Caminho.Count -eq 0) {
         exit 0
     }
     Aviso "nenhum -Caminho informado; conferindo o(s) $($Caminho.Count) executavel(is) conhecido(s)"
+} else {
+    # Placeholder colado literal, ou caminho digitado errado: em vez de so dizer
+    # "nao existe", procurar o agente onde ele costuma estar e conferir aquele.
+    $inexistentes = @($Caminho | Where-Object { -not (Test-Path -LiteralPath $_) })
+    if ($inexistentes.Count -eq $Caminho.Count) {
+        Aviso "nenhum dos caminhos informados existe - procurando o ArgosPrint.exe"
+        $achados = @(
+            "$env:USERPROFILE\Scripts\ArgosPrint.exe",
+            "$env:USERPROFILE\ArgosPrint\ArgosPrint.exe",
+            "$env:USERPROFILE\Desktop\ArgosPrint.exe",
+            (Join-Path ([Environment]::GetFolderPath('Desktop')) 'ArgosPrint.exe'),
+            'C:\ArgosPrint\ArgosPrint.exe',
+            'C:\Argos\ArgosPrint.exe'
+        ) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -Unique
+
+        # processo em execucao sabe o proprio caminho melhor que qualquer palpite
+        $vivo = @(Get-Process -Name 'ArgosPrint' -ErrorAction SilentlyContinue |
+                  ForEach-Object { $_.Path } | Where-Object { $_ })
+        $achados = @(@($achados) + @($vivo) | Select-Object -Unique)
+
+        if ($achados.Count -gt 0) {
+            Aviso "achei: $($achados -join ', ')"
+            $Caminho = $achados
+        }
+    }
 }
 
 # Nomes das arquiteturas no cabecalho PE. Ver IMAGE_FILE_HEADER.Machine.
@@ -232,7 +257,44 @@ if ($srp -and $null -ne $srp.DefaultLevel -and $srp.DefaultLevel -ne 262144) {
 $si = Get-CimInstance -ClassName Win32_DeviceGuard -Namespace 'root\Microsoft\Windows\DeviceGuard' -ErrorAction SilentlyContinue
 if ($si -and $si.CodeIntegrityPolicyEnforcementStatus -gt 0) {
     $temPolitica = $true
-    Aviso "Integridade de Codigo (WDAC) em modo $($si.CodeIntegrityPolicyEnforcementStatus)"
+    $modo = switch ($si.CodeIntegrityPolicyEnforcementStatus) {
+        1 { 'AUDITORIA (registra, nao bloqueia)' }
+        2 { 'APLICADO (BLOQUEIA programa fora da politica)' }
+        default { "modo $($si.CodeIntegrityPolicyEnforcementStatus)" }
+    }
+    Aviso "Integridade de Codigo (WDAC): $modo"
+
+    # O Smart App Control do Windows 11 e WDAC com outro nome, e e a explicacao
+    # mais provavel num PC comum: ele recusa executavel sem assinatura confiavel.
+    $sac = Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy' -Name 'VerifiedAndReputablePolicyState' -ErrorAction SilentlyContinue
+    if ($sac) {
+        $estado = switch ($sac.VerifiedAndReputablePolicyState) {
+            0 { 'DESLIGADO' }
+            1 { 'LIGADO - bloqueia programa sem assinatura confiavel' }
+            2 { 'em AVALIACAO' }
+            default { "estado $($sac.VerifiedAndReputablePolicyState)" }
+        }
+        Linha ''
+        Aviso "Smart App Control: $estado"
+        if ($sac.VerifiedAndReputablePolicyState -eq 1) {
+            Linha ''
+            Linha 'ESTA E A CAUSA MAIS PROVAVEL num PC comum: o Smart App Control'
+            Linha 'recusa programa que nao tenha assinatura digital reconhecida.'
+            Linha 'Programa feito em casa, sem certificado, nao passa.'
+            Linha ''
+            Linha 'Tres saidas, da melhor para a pior:'
+            Linha '  1. ASSINAR o programa com certificado de code signing (resolve em'
+            Linha '     todas as maquinas de uma vez, e e o certo)'
+            Linha '  2. Rodar numa maquina sem Smart App Control'
+            Linha '  3. Desligar o Smart App Control nesta maquina'
+            Linha ''
+            Linha '  ATENCAO na opcao 3: desligar e DEFINITIVO. Para religar so'
+            Linha '  reinstalando o Windows. E baixa a protecao da maquina inteira,'
+            Linha '  nao so para este programa. Decida com calma.'
+            Linha '  Fica em: Seguranca do Windows > Controle de aplicativos e navegador'
+            Linha '           > Configuracoes do Controle Inteligente de Aplicativos'
+        }
+    }
 }
 
 if (-not $temPolitica) { OK 'nenhuma politica de bloqueio de aplicativo encontrada' }
@@ -259,7 +321,9 @@ Write-Host '     -> a secao do arquivo acima mostra "INCOMPATIVEL"'
 Write-Host '  2. Download interrompido: arquivo vazio, truncado, ou sem "MZ"'
 Write-Host '     -> baixar de novo resolve'
 Write-Host '  3. Nao e programa: DLL, instalador pela metade, pagina de erro salva como .exe'
-Write-Host '  4. Bloqueio por politica (AppLocker / WDAC) ou quarentena do antivirus'
+Write-Host '  4. Bloqueio por politica: AppLocker, WDAC ou Smart App Control'
+Write-Host '     -> aqui o que decide e a ASSINATURA DIGITAL, nao a arquitetura;'
+Write-Host '        veja a linha "Assinatura" do arquivo e a secao de politica'
 Write-Host ''
 Write-Host '  Se tudo acima estiver [OK] e a mensagem persistir, mande este relatorio'
 Write-Host '  inteiro junto com o nome do programa e de onde ele foi baixado.'
