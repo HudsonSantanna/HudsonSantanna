@@ -94,6 +94,7 @@ servidor. Protocolos suportados: SSH (sshfs), NFS e SMB.
 | `scripts/windows/4-atualizar-claude.ps1` | Windows (servidor) | Inventaria, confere e atualiza os comandos, agentes, skills e hooks do Claude Code |
 | `scripts/windows/4-etiquetas-argos.ps1` | Windows   | Radiografia da impressora de etiquetas, do agente Argos Print e do leitor |
 | `scripts/windows/5-quarentena-hd.ps1` | Windows     | Manda para o HD o que não é usado na máquina: copia, confere SHA-256 e só então apaga |
+| `scripts/windows/4-arquivar-pastas.ps1`| Windows     | Mede as pastas, arquiva as que você escolher no HD (confere por hash) e deixa atalho |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada).
 
@@ -114,6 +115,7 @@ Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nad
 8. [Estação de etiquetas: Bixolon + Argos Print](docs/08-etiquetas-argos-print.md)
 9. [Liberar espaço da máquina mandando para o HD](docs/09-liberar-espaco-com-hd.md)
 10. [Checklist de campo](docs/checklist.md)
+7. [Arquivar pastas no HD externo](docs/07-arquivar-pastas.md)
 
 ## Requisitos
 
