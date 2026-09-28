@@ -1,0 +1,18 @@
+# Rotinas essenciais do servidor KHAOSOMNI
+#
+# Lista FECHADA usada pelo verificar-agentes.ps1: so o que casar com uma linha
+# daqui e religado com -Ativar. Tarefa desligada fora desta lista so aparece
+# no relatorio.
+#
+# Um nome de tarefa do Agendador por linha. Aceita curinga (*) e pode incluir
+# a pasta: \Argos\* casa tudo que estiver na pasta Argos do Agendador.
+# Maiusculas e minusculas nao importam. Linha com # e comentario.
+#
+# ATENCAO: os nomes abaixo sao o ponto de partida. Confira no relatorio a
+# secao "OUTRAS ROTINAS" e troque os curingas pelos nomes exatos das rotinas
+# que nao podem parar.
+
+ARGOS*
+\Argos\*
+*Cerebro*
+*Cérebro*
