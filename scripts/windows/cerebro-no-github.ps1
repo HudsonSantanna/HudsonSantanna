@@ -52,11 +52,16 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Caminho que parece segredo. O .gitignore e a primeira barreira; esta e a
-# segunda, para o dia em que alguem criar uma nota nova com credencial.
-$script:CaminhoSensivel = '(?i)(credencia|senha|password|secret|segredo|token|\.env$|\.pem$|\.pfx$|\.p12$|\.key$|id_rsa|id_ed25519|\.credentials\.json$|SERVIDOR-CONFIG)'
-# Conteudo que parece chave de verdade (so linhas ADICIONADAS nesta rodada).
-$script:ConteudoSensivel = '(sk-ant-[A-Za-z0-9_-]{10,}|sk-[A-Za-z0-9]{32,}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]{10,})'
+# Caminho que parece ARQUIVO de segredo. O .gitignore e a primeira barreira;
+# esta e a segunda, para o dia em que alguem criar uma nota nova com
+# credencial. "token" NAO entra aqui: em 28/09 ela barrou 4 notas de sessao
+# que so FALAVAM de token no titulo. Token colado dentro da nota e trabalho
+# da trava de conteudo, logo abaixo.
+$script:CaminhoSensivel = '(?i)(credencia|senha|password|\.env$|\.pem$|\.pfx$|\.p12$|\.key$|id_rsa|id_ed25519|\.credentials\.json$|SERVIDOR-CONFIG)'
+# Conteudo que parece chave de verdade (so linhas ADICIONADAS nesta rodada):
+# Anthropic, OpenAI, GitHub, AWS, chave privada, Slack, Meta/Facebook, Google,
+# e qualquer "access_token/refresh_token/api_key/client_secret = <valor longo>".
+$script:ConteudoSensivel = '(sk-ant-[A-Za-z0-9_-]{10,}|sk-[A-Za-z0-9]{32,}|ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|xox[baprs]-[A-Za-z0-9-]{10,}|EAA[A-Za-z0-9]{60,}|AIza[0-9A-Za-z_-]{35}|(?i:access_token|refresh_token|api_key|apikey|client_secret|partner_key)["''\s:=]+[A-Za-z0-9._-]{20,})'
 
 function Registrar([string]$Texto) {
     $linha = "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  $Texto"
@@ -77,7 +82,8 @@ function RodarGit {
     $anterior = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $saida = & git -C $Cerebro @args 2>&1 | ForEach-Object { "$_" }
+        # quotePath=false: nome com acento sai legivel, e nao "03-Sess\303\265es".
+        $saida = & git -C $Cerebro -c core.quotePath=false @args 2>&1 | ForEach-Object { "$_" }
         $script:GitCodigo = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $anterior
@@ -159,10 +165,17 @@ try {
         } elseif ($mudados.Count -gt $LimiteArquivos) {
             $problema = "$($mudados.Count) arquivos de uma vez (limite $LimiteArquivos). Pasta nova que devia estar no .gitignore?"
         } else {
-            $adicionadas = RodarGit diff --cached -U0 --no-color |
-                Where-Object { $_.StartsWith('+') -and -not $_.StartsWith('+++') }
-            $achado = $adicionadas | Where-Object { $_ -match $script:ConteudoSensivel } | Select-Object -First 1
-            if ($achado) { $problema = 'conteudo com cara de chave/token numa linha nova (valor nao registrado no log).' }
+            # Diz EM QUAL nota esta o problema (o valor nunca vai para o log).
+            $atual = $null
+            $comChave = New-Object System.Collections.ArrayList
+            foreach ($l in (RodarGit diff --cached -U0 --no-color)) {
+                if ($l.StartsWith('+++ ')) { $atual = ($l.Substring(4) -replace '^b/', '').TrimEnd("`t"); continue }
+                if ($l.StartsWith('+') -and $l -match $script:ConteudoSensivel -and
+                    -not $comChave.Contains($atual)) { [void]$comChave.Add($atual) }
+            }
+            if ($comChave.Count -gt 0) {
+                $problema = "conteudo com cara de chave/token em $($comChave.Count) arquivo(s) (valor nao registrado): $(@($comChave)[0..([Math]::Min(4, $comChave.Count) - 1)] -join ', ')"
+            }
         }
         if ($problema) {
             RodarGit reset -q | Out-Null   # desfaz o add; os arquivos ficam como estavam
