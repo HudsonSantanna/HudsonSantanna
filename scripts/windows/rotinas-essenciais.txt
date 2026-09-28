@@ -4,19 +4,44 @@
 # daqui e religado com -Ativar. Tarefa desligada fora desta lista so aparece
 # no relatorio.
 #
-# Um nome de tarefa do Agendador por linha. Aceita curinga (*) e pode incluir
-# a pasta: \Argos\* casa tudo que estiver na pasta Argos do Agendador.
-# Maiusculas e minusculas nao importam. Linha com # e comentario.
+# Um nome de tarefa do Agendador por linha, EXATO. Aceita curinga (*), mas
+# evite: em 27/09 o servidor tinha 7 lembretes "Argos - ..." desligados DE
+# PROPOSITO (Alarme Live x3, Defesa Shopee Intergrar 24-08, Lembrete Servidor
+# 24-08, Lembrete Terminar BIOS 26-08, Retomar Demanda Sol 26-08) e um
+# "Argos*" os religaria. Com nome exato, o verificador tambem acusa quando
+# uma rotina essencial SOME.
 #
-# ATENCAO: os nomes abaixo sao o ponto de partida. Confira no relatorio a
-# secao "OUTRAS ROTINAS" e troque os curingas pelos nomes exatos das rotinas
-# que nao podem parar.
+# Fonte: 03-Sessoes/2026-09-27 Relatorio agentes 21h04.md do Cerebro
+# (Agendador do KHAOSOMNI, 22 essenciais) + o agente do Cerebro no GitHub.
+# Maiusculas e minusculas nao importam. Linha com # e comentario.
 
-# Envia o Cerebro ao GitHub a cada 30 min (cerebro-no-github.ps1 -Instalar).
-# Nome exato: se sumir, o /verificar-agentes acusa.
+# --- Cerebro e continuidade
 ARGOS - Cerebro no GitHub
+Argos Cerebro - Backup Diario
+Argos - Backup Diario
+Argos - Atualizador Diario
+Argos - Mapa do Codigo
+Argos - Remote Control 24h
+Argos - Tailscale no logon
 
-ARGOS*
-\Argos\*
-*Cerebro*
-*Cérebro*
+# --- Site e seguranca
+Argos - Sentinela (site no ar)
+Argos - Vigia do Site
+Argos - Vigia de E-mail
+Argos - Vigia de Invasao
+Argos - Vigia de Manutencao
+Argos - Regra de Ouro
+
+# --- Vendas e margem
+Argos - Alarme de Margem
+Argos - Hook Litera Manha
+Argos - Hook Litera Tarde
+Argos - Hook Litera Noite
+Argos - Lembrete Auditoria Sol
+
+# --- Meta / trafego
+Argos - Rotina Trafego Diaria
+Argos - Guardiao Gasto Meta
+Argos - Limite Diario Meta
+Argos - Vigia Contas Meta
+Argos - Placar Criativos

@@ -22,15 +22,21 @@ A lista **fechada** `scripts/windows/rotinas-essenciais.txt`: um nome de tarefa
 por linha, aceita curinga `*` e pasta (`\Argos\*`). Só o que casa com ela é
 religado. Tarefa desligada fora da lista aparece no relatório e fica como está.
 
-A lista vem com curingas de partida (`ARGOS*`, `\Argos\*`, `*Cerebro*`).
-Depois do primeiro `/verificar-agentes`, olhe a seção **OUTRAS ROTINAS** e troque
-os curingas pelos nomes exatos. Com nome exato, o script também avisa quando a
-rotina **sumiu** (foi apagada ou renomeada), coisa que o curinga não consegue.
+A lista tem os **nomes exatos** das 22 rotinas essenciais do KHAOSOMNI (do
+relatório de 27/09 às 21h04) mais o agente `ARGOS - Cerebro no GitHub`. Evite
+curinga: o servidor tem 7 lembretes `Argos - ...` desligados **de propósito**
+(Alarme Live ×3, Defesa Shopee Intergrar 24-08, Lembrete Servidor 24-08,
+Lembrete Terminar BIOS 26-08, Retomar Demanda Sol 26-08), e um `Argos*`
+religaria todos. Com nome exato, o script também avisa quando uma rotina
+**sumiu** (foi apagada ou renomeada).
+
+Rotina nova que não pode parar? Acrescente o nome exato numa linha.
 
 ## O que o script confere
 
 - rotina essencial **desligada**;
-- ligada mas **sem próxima execução** (gatilho vencido);
+- ligada mas **sem próxima execução** (gatilho vencido). Rotina que roda por
+  evento, como a `Argos - Tailscale no logon`, não tem horário e não entra nessa conta;
 - **execuções perdidas** (máquina desligada ou dormindo no horário);
 - **última execução com falha** (resultado diferente de `0x0`);
 - ação que chama um **arquivo que não existe** mais.

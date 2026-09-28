@@ -195,11 +195,21 @@ foreach ($t in $essenciais) {
         }
     }
 
+    # Gatilho de evento (logon, boot, evento do log) nunca tem "proxima
+    # execucao" marcada - e o caso da "Argos - Tailscale no logon". So
+    # gatilho de horario precisa de NextRunTime.
+    $soPorEvento = $false
+    $tiposGatilho = @($t.Triggers | ForEach-Object { $_.CimClass.CimClassName })
+    if ($tiposGatilho.Count -gt 0) {
+        $soPorEvento = -not ($tiposGatilho | Where-Object { $_ -match 'Time|Daily|Weekly|Monthly' })
+    }
+
+    $antes = $script:Problemas
     if ($t.State -eq 'Disabled') {
         Problema '    [ERRO] DESLIGADA - a rotina nao vai rodar.'
         $desligadas += [pscustomobject]@{ Tarefa = $t; Nome = $nome; Faltando = $arquivosFaltando }
     } else {
-        if (-not $info.NextRunTime -or $info.NextRunTime.Year -lt 2000) {
+        if (-not $soPorEvento -and (-not $info.NextRunTime -or $info.NextRunTime.Year -lt 2000)) {
             Problema '    [!] Ligada, mas SEM proxima execucao - gatilho vencido ou ausente.'
         }
         if ($info.NumberOfMissedRuns -gt 0) {
@@ -212,9 +222,9 @@ foreach ($t in $essenciais) {
     foreach ($f in $arquivosFaltando) {
         Problema "    [ERRO] A acao chama um arquivo que NAO existe: $f"
     }
-    if ($t.State -ne 'Disabled' -and $arquivosFaltando.Count -eq 0 -and
-        $script:ResultadosBons -contains [int64]$info.LastTaskResult) {
-        Escrever '    [OK]'
+    if ($script:Problemas -eq $antes) {
+        if ($soPorEvento) { Escrever '    [OK] (roda por evento: logon/boot - sem horario fixo)' }
+        else { Escrever '    [OK]' }
     }
 }
 
