@@ -56,8 +56,9 @@ $ErrorActionPreference = 'Stop'
 # esta e a segunda, para o dia em que alguem criar uma nota nova com
 # credencial. "token" NAO entra aqui: em 28/09 ela barrou 4 notas de sessao
 # que so FALAVAM de token no titulo. Token colado dentro da nota e trabalho
-# da trava de conteudo, logo abaixo.
-$script:CaminhoSensivel = '(?i)(credencia|senha|password|\.env$|\.pem$|\.pfx$|\.p12$|\.key$|id_rsa|id_ed25519|\.credentials\.json$|SERVIDOR-CONFIG)'
+# da trava de conteudo, logo abaixo. "senha" so como palavra inteira: a nota
+# "GPT desenha, Kimi codifica" caia na trava por causa do "de-SENHA".
+$script:CaminhoSensivel = '(?i)(credencia|\bsenhas?\b|\bpasswords?\b|\.env$|\.pem$|\.pfx$|\.p12$|\.key$|id_rsa|id_ed25519|\.credentials\.json$|SERVIDOR-CONFIG)'
 # Conteudo que parece chave de verdade (so linhas ADICIONADAS nesta rodada):
 # Anthropic, OpenAI, GitHub, AWS, chave privada, Slack, Meta/Facebook, Google,
 # e qualquer "access_token/refresh_token/api_key/client_secret = <valor longo>".
