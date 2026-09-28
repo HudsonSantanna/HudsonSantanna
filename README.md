@@ -100,6 +100,7 @@ servidor. Protocolos suportados: SSH (sshfs), NFS e SMB.
 | `scripts/windows/7-nomear-impressoras.ps1` | Windows (estoque) | Identifica cada BIXOLON imprimindo o próprio nome e renomeia para `Codigo de Barra` / `Etiqueta Fiscal` |
 | `scripts/windows/8-verificar-executavel.ps1` | Windows | Diz por que o Windows recusa um programa com "não pode ser executado em seu PC" (lê o cabeçalho PE) |
 | `scripts/windows/verificar-agentes.ps1` | Windows (servidor) | Confere as rotinas agendadas e religa as essenciais desligadas (lista em `rotinas-essenciais.txt`); é o que o `/verificar-agentes` roda |
+| `scripts/windows/cerebro-no-github.ps1` | Windows (servidor) | Agente que envia o Cérebro ao GitHub a cada 30 min, com travas contra segredo e envio em massa (`-Instalar` cria a tarefa) |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada) —
 menos os dois da etiquetadora: o `5-diagnostico-etiquetadora.ps1` é somente
@@ -124,6 +125,7 @@ já mostra o plano por padrão — aplica só com `-Confirmar`, igual ao
 - [Imagens no servidor (SSH, NFS ou SMB)](docs/09-imagens-no-servidor.md)
 - [Atualizar o Claude Code do servidor](docs/10-atualizar-claude-servidor.md)
 - [Verificar e religar os agentes do servidor (`/verificar-agentes`)](docs/16-verificar-agentes.md)
+- [Cérebro no GitHub, sozinho](docs/17-cerebro-no-github.md)
 
 **Manutenção do Windows**
 

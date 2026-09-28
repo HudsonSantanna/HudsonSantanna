@@ -12,6 +12,10 @@
 # secao "OUTRAS ROTINAS" e troque os curingas pelos nomes exatos das rotinas
 # que nao podem parar.
 
+# Envia o Cerebro ao GitHub a cada 30 min (cerebro-no-github.ps1 -Instalar).
+# Nome exato: se sumir, o /verificar-agentes acusa.
+ARGOS - Cerebro no GitHub
+
 ARGOS*
 \Argos\*
 *Cerebro*
