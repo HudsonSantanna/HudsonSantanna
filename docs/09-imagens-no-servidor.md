@@ -1,4 +1,4 @@
-# 7. Imagens no servidor (rede do escritório)
+# 9. Imagens no servidor (rede do escritório)
 
 O pendrive continua sendo o que dá boot e o que roda os scripts. O que muda
 aqui é **onde ficam as imagens**: em vez de caberem na segunda partição do

@@ -1,4 +1,4 @@
-# 9. Liberar espaço da máquina mandando para o HD
+# 12. Liberar espaço da máquina mandando para o HD
 
 Regra que manda aqui, tirada da nota `MANUTENCAO - laudo do notebook` do Cérebro:
 

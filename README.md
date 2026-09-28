@@ -11,7 +11,7 @@ nomes de imagem padronizados e registro de log.
 
 As imagens ficam no próprio pendrive ou, quando há um servidor na rede do
 escritório, direto nele: uma imagem só para todas as máquinas. Veja
-[docs/07-imagens-no-servidor.md](docs/07-imagens-no-servidor.md).
+[docs/09-imagens-no-servidor.md](docs/09-imagens-no-servidor.md).
 
 ## Layout do pendrive
 
@@ -99,6 +99,7 @@ servidor. Protocolos suportados: SSH (sshfs), NFS e SMB.
 | `scripts/windows/6-configurar-etiquetadora.ps1` | Windows (estoque) | Monta o caminho ZPL/RAW: fila `Generic / Text Only`, compartilhamento e `impressora_argos.txt` (mostra o plano; aplica com `-Confirmar`) |
 | `scripts/windows/7-nomear-impressoras.ps1` | Windows (estoque) | Identifica cada BIXOLON imprimindo o próprio nome e renomeia para `Codigo de Barra` / `Etiqueta Fiscal` |
 | `scripts/windows/8-verificar-executavel.ps1` | Windows | Diz por que o Windows recusa um programa com "não pode ser executado em seu PC" (lê o cabeçalho PE) |
+| `scripts/windows/verificar-agentes.ps1` | Windows (servidor) | Confere as rotinas agendadas e religa as essenciais desligadas (lista em `rotinas-essenciais.txt`); é o que o `/verificar-agentes` roda |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada) —
 menos os dois da etiquetadora: o `5-diagnostico-etiquetadora.ps1` é somente
@@ -108,23 +109,35 @@ já mostra o plano por padrão — aplica só com `-Confirmar`, igual ao
 
 ## Documentação
 
-1. [Preparar o pendrive](docs/01-preparar-pendrive.md)
-2. [Criar a imagem mestre](docs/02-criar-imagem-mestre.md)
-3. [Restaurar em lote](docs/03-restaurar-em-lote.md)
-4. [Solução de problemas](docs/04-solucao-de-problemas.md)
-5. [Preparar o pendrive pelo Windows](docs/05-preparar-pelo-windows.md)
-6. [Manutenção da máquina no Windows](docs/06-manutencao-windows.md)
-7. [Sincronizar as máquinas](docs/07-sincronizar-maquinas.md)
-8. [Usar o servidor da rede](docs/08-servidor-de-rede.md)
-9. [Checklist de campo](docs/checklist.md)
-7. [Atualizar o Claude Code do servidor](docs/07-atualizar-claude-servidor.md)
-8. [Checklist de campo](docs/checklist.md)
-7. [Imagens no servidor (rede do escritório)](docs/07-imagens-no-servidor.md)
-8. [Estação de etiquetas: Bixolon + Argos Print](docs/08-etiquetas-argos-print.md)
-9. [Liberar espaço da máquina mandando para o HD](docs/09-liberar-espaco-com-hd.md)
-10. [Checklist de campo](docs/checklist.md)
-7. [Arquivar pastas no HD externo](docs/07-arquivar-pastas.md)
-7. [Diagnóstico da etiquetadora](docs/08-diagnostico-etiquetadora.md)
+**Clonagem**
+
+- [Preparar o pendrive](docs/01-preparar-pendrive.md)
+- [Criar a imagem mestre](docs/02-criar-imagem-mestre.md)
+- [Restaurar em lote](docs/03-restaurar-em-lote.md)
+- [Solução de problemas](docs/04-solucao-de-problemas.md)
+- [Preparar o pendrive pelo Windows](docs/05-preparar-pelo-windows.md)
+
+**Servidor e sincronização**
+
+- [Sincronizar as máquinas](docs/07-sincronizar-maquinas.md)
+- [Usar o servidor da rede (SMB)](docs/08-servidor-de-rede.md)
+- [Imagens no servidor (SSH, NFS ou SMB)](docs/09-imagens-no-servidor.md)
+- [Atualizar o Claude Code do servidor](docs/10-atualizar-claude-servidor.md)
+- [Verificar e religar os agentes do servidor (`/verificar-agentes`)](docs/16-verificar-agentes.md)
+
+**Manutenção do Windows**
+
+- [Manutenção da máquina no Windows](docs/06-manutencao-windows.md)
+- [Arquivar pastas no HD externo](docs/11-arquivar-pastas.md)
+- [Liberar espaço da máquina mandando para o HD](docs/12-liberar-espaco-com-hd.md)
+
+**Etiquetas (Argos Estoque)**
+
+- [Estação de etiquetas: Bixolon + Argos Print](docs/13-etiquetas-argos-print.md)
+- [Diagnóstico da etiquetadora](docs/14-diagnostico-etiquetadora.md)
+- [Vigia das etiquetadoras (especificação)](docs/15-vigia-etiquetadoras.md)
+
+[Checklist de campo](docs/checklist.md)
 
 ## Requisitos
 

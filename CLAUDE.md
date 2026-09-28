@@ -18,8 +18,10 @@ computador. É por ele que todas as sessões partem das mesmas regras.
 | `scripts/clonar-maquina.sh`     | Captura imagem (roda dentro do Clonezilla Live) |
 | `scripts/restaurar-maquina.sh`  | Restaura imagem (roda dentro do Clonezilla Live) |
 | `scripts/montar-servidor.sh`    | Monta o repositório de imagens de um servidor SMB pela rede |
+| `scripts/verificar-rede.sh`, `scripts/sincronizar-imagens.sh`, `scripts/lib/rede.sh` | Repositório de imagens no servidor (SSH, NFS ou SMB) |
 | `scripts/lib/comum.sh`          | Funções compartilhadas: log, confirmação, partições |
-| `scripts/windows/*.ps1`         | Diagnóstico, limpeza e mudança de dados (Windows) |
+| `scripts/windows/*.ps1`         | Manutenção do Windows, etiquetadoras e o Claude Code do servidor |
+| `.claude/commands/`             | Comandos do Claude Code — `/verificar-agentes` |
 | `docs/`                         | Passo a passo numerado e checklist de campo |
 
 ## Convenções

@@ -379,5 +379,5 @@ Proximos passos:
   Para configurar o servidor depois, copie scripts/rede.conf.exemplo para
   a raiz da particao $ROTULO_DADOS como rede.conf e ajuste os valores.
   Detalhes em docs/02-criar-imagem-mestre.md, docs/03-restaurar-em-lote.md
-  e docs/07-imagens-no-servidor.md
+  e docs/09-imagens-no-servidor.md
 FIM

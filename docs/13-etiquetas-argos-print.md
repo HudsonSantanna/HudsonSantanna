@@ -1,4 +1,4 @@
-# 8. Estação de etiquetas: Bixolon XD3-40t + Argos Print
+# 13. Estação de etiquetas: Bixolon XD3-40t + Argos Print
 
 Roteiro para deixar a **`HUDSONINTEGRAR`** imprimindo etiqueta de código de
 barras direto do Argos Estoque, sem encostar na Bixolon **fiscal** do UpSeller
