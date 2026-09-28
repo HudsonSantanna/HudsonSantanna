@@ -58,6 +58,7 @@ sudo /home/partimag/scripts/restaurar-maquina.sh       # grava em outra máquina
 | `scripts/windows/1-diagnostico.ps1`   | Windows     | Relatório de espaço, saúde dos discos, maiores pastas e arquivos |
 | `scripts/windows/2-limpeza.ps1`       | Windows     | Libera caches e temporários (simula por padrão) |
 | `scripts/windows/3-mover-para-hd.ps1` | Windows     | Copia para HD externo, confere e só então apaga a origem |
+| `scripts/windows/4-atualizar-claude.ps1` | Windows (servidor) | Inventaria, confere e atualiza os comandos, agentes, skills e hooks do Claude Code |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada).
 
@@ -72,6 +73,8 @@ Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nad
 7. [Sincronizar as máquinas](docs/07-sincronizar-maquinas.md)
 8. [Usar o servidor da rede](docs/08-servidor-de-rede.md)
 9. [Checklist de campo](docs/checklist.md)
+7. [Atualizar o Claude Code do servidor](docs/07-atualizar-claude-servidor.md)
+8. [Checklist de campo](docs/checklist.md)
 
 ## Requisitos
 
