@@ -95,8 +95,16 @@ servidor. Protocolos suportados: SSH (sshfs), NFS e SMB.
 | `scripts/windows/4-etiquetas-argos.ps1` | Windows   | Radiografia da impressora de etiquetas, do agente Argos Print e do leitor |
 | `scripts/windows/5-quarentena-hd.ps1` | Windows     | Manda para o HD o que não é usado na máquina: copia, confere SHA-256 e só então apaga |
 | `scripts/windows/4-arquivar-pastas.ps1`| Windows     | Mede as pastas, arquiva as que você escolher no HD (confere por hash) e deixa atalho |
+| `scripts/windows/5-diagnostico-etiquetadora.ps1` | Windows (estoque) | Diagnóstico somente leitura da etiquetadora BIXOLON, do agente ArgosPrint e da pistola |
+| `scripts/windows/6-configurar-etiquetadora.ps1` | Windows (estoque) | Monta o caminho ZPL/RAW: fila `Generic / Text Only`, compartilhamento e `impressora_argos.txt` (mostra o plano; aplica com `-Confirmar`) |
+| `scripts/windows/7-nomear-impressoras.ps1` | Windows (estoque) | Identifica cada BIXOLON imprimindo o próprio nome e renomeia para `Codigo de Barra` / `Etiqueta Fiscal` |
+| `scripts/windows/8-verificar-executavel.ps1` | Windows | Diz por que o Windows recusa um programa com "não pode ser executado em seu PC" (lê o cabeçalho PE) |
 
-Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada).
+Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada) —
+menos os dois da etiquetadora: o `5-diagnostico-etiquetadora.ps1` é somente
+leitura por natureza e não tem o que simular, e o `6-configurar-etiquetadora.ps1`
+já mostra o plano por padrão — aplica só com `-Confirmar`, igual ao
+`7-nomear-impressoras.ps1`.
 
 ## Documentação
 
@@ -116,6 +124,7 @@ Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nad
 9. [Liberar espaço da máquina mandando para o HD](docs/09-liberar-espaco-com-hd.md)
 10. [Checklist de campo](docs/checklist.md)
 7. [Arquivar pastas no HD externo](docs/07-arquivar-pastas.md)
+7. [Diagnóstico da etiquetadora](docs/08-diagnostico-etiquetadora.md)
 
 ## Requisitos
 
