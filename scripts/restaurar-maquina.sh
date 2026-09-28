@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# restaurar-maquina.sh - Restaura uma imagem do pendrive para o disco da
-# maquina. Deve ser executado dentro do Clonezilla Live (Enter_shell).
+# restaurar-maquina.sh - Restaura uma imagem para o disco da maquina. As
+# imagens vem do servidor da rede do escritorio (o "cerebro") ou do pendrive.
+# Deve ser executado dentro do Clonezilla Live (Enter_shell).
 #
 # ATENCAO: apaga completamente o disco de destino.
 #
@@ -10,6 +11,8 @@ set -euo pipefail
 DIR_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/comum.sh
 source "$DIR_SCRIPT/lib/comum.sh"
+# shellcheck source=lib/rede.sh
+source "$DIR_SCRIPT/lib/rede.sh"
 
 IMAGEM=""
 DISCO=""
@@ -18,13 +21,22 @@ REPOSITORIO="/home/partimag"
 DEPOIS="choose"
 PROPORCIONAL=0
 ASSUMIR_SIM=0
+MODO_LOCAL=0
+MODO_RO=0
+ARQUIVO_CONFIG=""
+REPO_REMOTO=0
+DIR_LOGS=""
+
+# Preenchidas pelas opcoes de rede; vencem o que estiver no rede.conf.
+CLI_SERVIDOR=""; CLI_PROTOCOLO=""; CLI_CAMINHO=""; CLI_USUARIO=""
+CLI_PORTA=""; CLI_CREDENCIAIS=""; CLI_DOMINIO=""; CLI_OPCOES=""; CLI_INTERFACE=""
 
 ajuda() {
   cat <<'AJUDA'
 Uso: sudo ./restaurar-maquina.sh [opcoes]
 
-Restaura uma imagem gravada no pendrive para o disco informado.
-O DISCO DE DESTINO E APAGADO POR COMPLETO.
+Restaura uma imagem do repositorio (servidor da rede ou pendrive) para o
+disco informado. O DISCO DE DESTINO E APAGADO POR COMPLETO.
 
 Opcoes:
   -i, --imagem NOME       Nome da imagem (pasta dentro de imagens/).
@@ -37,10 +49,27 @@ Opcoes:
       --simular           Mostra o comando do ocs-sr sem executar.
       --sim               Nao pergunta confirmacao. PERIGOSO.
   -h, --ajuda             Esta mensagem.
+
+Repositorio na rede do escritorio (o "cerebro" no servidor):
+  -s, --servidor HOST     Servidor das imagens (IP ou nome). Ativa o modo rede.
+      --protocolo P       ssh (padrao), nfs ou smb.
+      --caminho CAMINHO   Caminho exportado (ssh/nfs) ou compartilhamento (smb).
+  -u, --usuario NOME      Usuario no servidor.
+      --porta N           Porta, quando nao for a padrao (22/2049/445).
+      --credenciais ARQ   Chave SSH ou arquivo de credenciais do smb.
+      --dominio NOME      Dominio Windows (smb).
+      --opcoes-montagem O Opcoes extras de montagem, separadas por virgula.
+      --interface IFACE   Interface de rede a usar (vazio: cabo conectado).
+      --config ARQUIVO    rede.conf a usar (padrao: procura nos locais de sempre).
+      --somente-leitura   Monta o repositorio como so leitura (log fica local).
+      --local             Ignora a rede e le do pendrive.
+
+Sem servidor configurado, o comportamento e o de sempre: pendrive.
 AJUDA
 }
 
 APENAS_LISTAR=0
+# shellcheck disable=SC2034  # as CLI_* sao lidas por rede_aplicar_cli (lib/rede.sh).
 while [ $# -gt 0 ]; do
   case "$1" in
     -i|--imagem)      IMAGEM="${2:-}"; shift 2 ;;
@@ -50,6 +79,18 @@ while [ $# -gt 0 ]; do
     --proporcional)   PROPORCIONAL=1; shift ;;
     --depois)         DEPOIS="${2:-}"; shift 2 ;;
     --listar)         APENAS_LISTAR=1; shift ;;
+    -s|--servidor)    CLI_SERVIDOR="${2:-}"; shift 2 ;;
+    --protocolo)      CLI_PROTOCOLO="${2:-}"; shift 2 ;;
+    --caminho)        CLI_CAMINHO="${2:-}"; shift 2 ;;
+    -u|--usuario)     CLI_USUARIO="${2:-}"; shift 2 ;;
+    --porta)          CLI_PORTA="${2:-}"; shift 2 ;;
+    --credenciais)    CLI_CREDENCIAIS="${2:-}"; shift 2 ;;
+    --dominio)        CLI_DOMINIO="${2:-}"; shift 2 ;;
+    --opcoes-montagem) CLI_OPCOES="${2:-}"; shift 2 ;;
+    --interface)      CLI_INTERFACE="${2:-}"; shift 2 ;;
+    --config)         ARQUIVO_CONFIG="${2:-}"; shift 2 ;;
+    --somente-leitura) MODO_RO=1; shift ;;
+    --local)          MODO_LOCAL=1; shift ;;
     --simular)        SIMULAR=1; shift ;;
     --sim)            ASSUMIR_SIM=1; shift ;;
     -h|--ajuda)       ajuda; exit 0 ;;
@@ -64,15 +105,52 @@ precisa_root
   aviso "ocs-sr ausente (fora do Clonezilla Live); seguindo apenas em modo simulacao."
 fi
 
-preparar_repositorio() {
-  mountpoint -q "$REPOSITORIO" 2>/dev/null && return 0
+montar_pendrive() {
   local dev
   dev="$(dispositivo_por_rotulo "$ROTULO_DADOS")"
   [ -n "$dev" ] || abortar "Particao com rotulo '$ROTULO_DADOS' nao encontrada. Use --repositorio."
   info "Montando $dev em $REPOSITORIO"
   executar mkdir -p "$REPOSITORIO"
   executar mount "$dev" "$REPOSITORIO" || abortar "Falha ao montar $dev."
+  ORIGEM_REPO="pendrive ($dev)"
 }
+
+soltar_repositorio() {
+  [ "$REPO_REMOTO" = "1" ] || return 0
+  rede_desmontar "$REPOSITORIO"
+}
+
+preparar_repositorio() {
+  if mountpoint -q "$REPOSITORIO" 2>/dev/null; then
+    ORIGEM_REPO="$(findmnt -no SOURCE "$REPOSITORIO" 2>/dev/null || echo "$REPOSITORIO")"
+    return 0
+  fi
+
+  if [ "$MODO_LOCAL" = "1" ]; then
+    montar_pendrive
+    return 0
+  fi
+
+  rede_carregar_config "$ARQUIVO_CONFIG" || true
+  rede_aplicar_cli
+  if ! rede_configurada; then
+    montar_pendrive
+    return 0
+  fi
+
+  local modo="rw"
+  [ "$MODO_RO" = "1" ] && modo="ro"
+  info "Cerebro na rede: $(rede_alvo)"
+  rede_subir
+  rede_testar_servidor || abortar "Servidor $REDE_SERVIDOR inacessivel. Confira a rede ou use --local."
+  rede_montar_repositorio "$REPOSITORIO" "$modo"
+  rede_conferir_repositorio "$REPOSITORIO" "$modo" \
+    || abortar "Repositorio do servidor nao esta gravavel (use --somente-leitura)."
+  REPO_REMOTO=1
+  ORIGEM_REPO="servidor $(rede_alvo)"
+  trap soltar_repositorio EXIT
+}
+ORIGEM_REPO=""
 preparar_repositorio
 
 DIR_IMAGENS="$REPOSITORIO/imagens"
@@ -130,6 +208,7 @@ if [ "$SIMULAR" != "1" ]; then
 fi
 
 echo
+info "Repositorio: $ORIGEM_REPO"
 info "Imagem ....: $DIR_IMAGENS/$IMAGEM"
 info "Destino ...: $DISCO ($(tamanho_disco "$DISCO"))"
 lsblk -o NAME,SIZE,FSTYPE,LABEL "$DISCO" || true
@@ -137,7 +216,13 @@ echo
 aviso "TODO o conteudo de $DISCO sera APAGADO."
 confirmar_digitando "RESTAURAR"
 
-LOG="$REPOSITORIO/logs/restaurar-$IMAGEM-$CURTO-$(date +%Y%m%d-%H%M%S).log"
+# Com o repositorio so para leitura o log nao pode ir para o servidor.
+if [ "$MODO_RO" = "1" ]; then
+  DIR_LOGS="/tmp/kit-clonagem/logs"
+else
+  DIR_LOGS="$REPOSITORIO/logs"
+fi
+LOG="$DIR_LOGS/restaurar-$IMAGEM-$CURTO-$(date +%Y%m%d-%H%M%S).log"
 OPCOES=(-g auto -e1 auto -e2 -r -j2 -p "$DEPOIS")
 [ "$PROPORCIONAL" = "1" ] && OPCOES+=(-k1)
 
@@ -146,6 +231,6 @@ if [ "$SIMULAR" = "1" ]; then
   ok "Modo simulacao: nada foi executado."
   exit 0
 fi
-executar mkdir -p "$REPOSITORIO/logs"
+executar mkdir -p "$DIR_LOGS"
 ocs-sr -ocsroot "$DIR_IMAGENS" "${OPCOES[@]}" restoredisk "$IMAGEM" "$CURTO" 2>&1 | tee "$LOG"
 ok "Restauracao concluida (log: $LOG)"
