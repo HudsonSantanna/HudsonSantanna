@@ -4,6 +4,13 @@ Na **`HUDSONINTEGRAR`**, quem imprime a etiqueta de envio e o DANFE na BIXOLON
 **`Etiqueta Fiscal`** deixa de ser o agente local do UpSeller e passa a ser o
 agente Argos. O agente do UpSeller sai da inicialização do Windows.
 
+> **Achado de 29/09 na HUDSONINTEGRAR:** lá **não existe** agente local do
+> UpSeller. O `9-upseller-inicializacao.ps1` não achou nada, e hoje a etiqueta
+> abre numa janela do Chrome e sai por Ctrl+P → `Etiqueta Fiscal`. Não há o
+> que desligar. **Não desligue** o `Seagull Drivers V3` (driver das Bixolon)
+> nem o `Argos Print` (etiqueta de estoque) que aparecem na inicialização.
+> O script 9 fica para as máquinas que tiverem o agente do UpSeller.
+
 ## O que muda e o que não muda
 
 | | Antes | Depois |

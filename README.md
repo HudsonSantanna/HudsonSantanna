@@ -141,6 +141,7 @@ já mostra o plano por padrão — aplica só com `-Confirmar`, igual ao
 - [Diagnóstico da etiquetadora](docs/14-diagnostico-etiquetadora.md)
 - [Vigia das etiquetadoras (especificação)](docs/15-vigia-etiquetadoras.md)
 - [Argos imprime as notas fiscais no lugar do UpSeller](docs/18-argos-imprime-notas-fiscais.md)
+- [Vigia do UpSeller (especificação)](docs/19-vigia-upseller.md)
 
 [Checklist de campo](docs/checklist.md)
 

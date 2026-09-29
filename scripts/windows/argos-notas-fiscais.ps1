@@ -229,6 +229,9 @@ function Rodada {
     $arquivos = @(Get-ChildItem -LiteralPath $entrada -File -ErrorAction SilentlyContinue |
         Where-Object { $ignorar -notcontains $_.Extension.ToLower() -and $_.Name -notlike '~$*' } |
         Sort-Object LastWriteTime)
+    if ($UmaVez -and $arquivos.Count -eq 0) {
+        Registrar "[!] A pasta $entrada esta vazia - baixe uma etiqueta do UpSeller nela e rode de novo."
+    }
     foreach ($a in $arquivos) {
         if (-not (Pronto $a)) { continue }
         $ext = $a.Extension.ToLower()
