@@ -225,6 +225,9 @@ function Mover([IO.FileInfo]$Arq, [string]$Destino) {
     return $alvo
 }
 
+$script:presos   = @{}
+$script:avisados = @()
+
 function Rodada {
     $arquivos = @(Get-ChildItem -LiteralPath $entrada -File -ErrorAction SilentlyContinue |
         Where-Object { $ignorar -notcontains $_.Extension.ToLower() -and $_.Name -notlike '~$*' } |
@@ -233,7 +236,20 @@ function Rodada {
         Registrar "[!] A pasta $entrada esta vazia - baixe uma etiqueta do UpSeller nela e rode de novo."
     }
     foreach ($a in $arquivos) {
-        if (-not (Pronto $a)) { continue }
+        if (-not (Pronto $a)) {
+            # Arquivo aberto em outro programa (Acrobat, visualizador) fica
+            # aqui para sempre sem ninguem saber. Avisa uma vez, depois de 1 min.
+            if (-not $script:presos.ContainsKey($a.FullName)) { $script:presos[$a.FullName] = Get-Date }
+            elseif (((Get-Date) - $script:presos[$a.FullName]).TotalSeconds -ge 60 -and
+                    $script:avisados -notcontains $a.FullName) {
+                Registrar "[!] $($a.Name) esta aberto em outro programa (Acrobat?) - feche para imprimir."
+                $script:avisados += $a.FullName
+            }
+            if ($UmaVez) { Registrar "[!] $($a.Name) ainda em uso por outro programa - feche e rode de novo." }
+            continue
+        }
+        [void]$script:presos.Remove($a.FullName)
+        $script:avisados = @($script:avisados | Where-Object { $_ -ne $a.FullName })
         $ext = $a.Extension.ToLower()
         if ($ext -ne '.pdf' -and $tiposRaw -notcontains $ext) {
             if ($Simular) { Registrar "[PLANO] $($a.Name): tipo $ext nao suportado -> Erro\"; continue }
