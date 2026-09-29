@@ -99,6 +99,8 @@ servidor. Protocolos suportados: SSH (sshfs), NFS e SMB.
 | `scripts/windows/6-configurar-etiquetadora.ps1` | Windows (estoque) | Monta o caminho ZPL/RAW: fila `Generic / Text Only`, compartilhamento e `impressora_argos.txt` (mostra o plano; aplica com `-Confirmar`) |
 | `scripts/windows/7-nomear-impressoras.ps1` | Windows (estoque) | Identifica cada BIXOLON imprimindo o próprio nome e renomeia para `Codigo de Barra` / `Etiqueta Fiscal` |
 | `scripts/windows/8-verificar-executavel.ps1` | Windows | Diz por que o Windows recusa um programa com "não pode ser executado em seu PC" (lê o cabeçalho PE) |
+| `scripts/windows/9-upseller-inicializacao.ps1` | Windows (estoque) | Tira o agente do UpSeller da inicialização do Windows, com backup e `-Religar` (mostra o plano; aplica com `-Confirmar`) |
+| `scripts/windows/argos-notas-fiscais.ps1` | Windows (estoque) | Agente Argos que imprime na `Etiqueta Fiscal` os PDFs/ZPL de etiqueta e DANFE baixados do UpSeller (`-Instalar` cria a tarefa) |
 | `scripts/windows/verificar-agentes.ps1` | Windows (servidor) | Confere as rotinas agendadas e religa as essenciais desligadas (lista em `rotinas-essenciais.txt`); é o que o `/verificar-agentes` roda |
 | `scripts/windows/cerebro-no-github.ps1` | Windows (servidor) | Agente que envia o Cérebro ao GitHub a cada 30 min, com travas contra segredo e envio em massa (`-Instalar` cria a tarefa) |
 
@@ -138,6 +140,7 @@ já mostra o plano por padrão — aplica só com `-Confirmar`, igual ao
 - [Estação de etiquetas: Bixolon + Argos Print](docs/13-etiquetas-argos-print.md)
 - [Diagnóstico da etiquetadora](docs/14-diagnostico-etiquetadora.md)
 - [Vigia das etiquetadoras (especificação)](docs/15-vigia-etiquetadoras.md)
+- [Argos imprime as notas fiscais no lugar do UpSeller](docs/18-argos-imprime-notas-fiscais.md)
 
 [Checklist de campo](docs/checklist.md)
 
