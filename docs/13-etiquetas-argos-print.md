@@ -4,6 +4,10 @@ Roteiro para deixar a **`HUDSONINTEGRAR`** imprimindo etiqueta de código de
 barras direto do Argos Estoque, sem encostar na Bixolon **fiscal** do UpSeller
 que já existe naquela máquina.
 
+> Desde 29/09 a impressão da **Etiqueta Fiscal** passa pelo agente Argos, e o
+> agente do UpSeller saiu da inicialização. A impressora fiscal continua
+> intocada. Veja o [doc 18](18-argos-imprime-notas-fiscais.md).
+
 Tudo aqui vem das notas do Cérebro — não é suposição:
 
 - `05-Recursos/ARGOS PRINT - agente local de etiqueta (imprimir direto do sistema).md`
