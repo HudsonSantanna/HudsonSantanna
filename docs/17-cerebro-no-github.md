@@ -14,6 +14,11 @@ perceber.
 O `scripts/windows/cerebro-no-github.ps1` roda no **KHAOSOMNI** como tarefa
 agendada (`ARGOS - Cerebro no GitHub`), a cada 30 minutos. Em cada rodada:
 
+0. **Kit Claude**: roda o `Publicar-Kit-Claude-no-GitHub.ps1 -Executar`, que
+   mora no próprio Cérebro (`05-Recursos\Kit-Claude-Nuvem\`). Ele copia
+   `skills`, `agents`, `commands` e o `CLAUDE.md` do `~\.claude` do servidor
+   para o `.claude\` do Cérebro, deixando de fora segredo e arquivo grande.
+   Se falhar, o agente registra no log e segue com o resto.
 1. `git add -A`. O `.gitignore` do Cérebro já segura financeiro, espião,
    credenciais, `_travas` e as cópias `*.do-notebook-*`.
 2. **Travas**. Se qualquer uma disparar, o script desfaz o `add` e não envia nada:
@@ -68,6 +73,24 @@ A tarefa entrou em `rotinas-essenciais.txt` com o nome exato. Então o
 - tiver **sumido**;
 - tiver a **última execução com falha**, que é o caso de trava ou conflito
   esperando você.
+
+## Comandos do Claude na nuvem em dia
+
+Até 30/09, o Kit Claude só subia quando alguém rodava o
+`Publicar-Kit-Claude-no-GitHub.ps1` à mão. Ele rodou uma vez, em 28/09, e a
+nuvem ficou presa nos comandos daquele dia. Agora ele vai junto em toda
+rodada. O relatório do kit fica em `%LOCALAPPDATA%\Argos\kit-claude-github.txt`,
+e não na Área de Trabalho, para não criar um arquivo novo lá a cada 30 minutos.
+
+Para rodar só o Cérebro, sem o kit, use `-SemKit`. A simulação (`-Simular`)
+também não roda o kit, porque ele grava arquivos.
+
+Depois de atualizar o script, copie-o de novo para o servidor. A tarefa já
+instalada aponta para o mesmo caminho, então não precisa reinstalar:
+
+```powershell
+Copy-Item scripts\windows\cerebro-no-github.ps1 "$env:USERPROFILE\Scripts\" -Force
+```
 
 ## A outra ponta: a nuvem
 
