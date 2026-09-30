@@ -10,6 +10,11 @@
     ninguem percebe.
 
     Cada rodada:
+      0. Kit Claude: copia skills, agentes, comandos e o CLAUDE.md do
+         ~\.claude do servidor para o .claude\ do Cerebro (script
+         Publicar-Kit-Claude-no-GitHub.ps1, que mora no proprio Cerebro).
+         Sem isso o Claude na nuvem fica com os comandos da ultima vez que
+         alguem lembrou de publicar a mao. Falha aqui nao impede o resto.
       1. git add -A  (o .gitignore do Cerebro ja segura financeiro, espiao,
                       credenciais, _travas e as copias *.do-notebook-*)
       2. TRAVAS antes do commit - se qualquer uma disparar, desfaz o add e
@@ -45,6 +50,8 @@ param(
     [int]   $Intervalo      = 30,
     [int]   $LimiteArquivos = 400,
     [switch]$Forcar,
+    [switch]$SemKit,
+    [string]$Kit            = '05-Recursos\Kit-Claude-Nuvem\Publicar-Kit-Claude-no-GitHub.ps1',
     [string]$Servidor       = 'KHAOSOMNI',
     [string]$Tarefa         = 'ARGOS - Cerebro no GitHub',
     [string]$Log            = "$env:LOCALAPPDATA\Argos\cerebro-no-github.log"
@@ -151,6 +158,29 @@ try {
     if ($script:GitCodigo -ne 0 -or $ramo -eq 'HEAD') { Parar 'Nao ha ramo atual (HEAD solto?).' }
     $remoto = (RodarGit remote get-url origin | Select-Object -First 1)
     if ($script:GitCodigo -ne 0) { Parar 'O repositorio nao tem o remoto "origin".' }
+
+    # ------------------------------------------------------ 0. Kit Claude
+    # Roda em outro processo: o script do kit usa 'throw' e nao pode derrubar
+    # esta rodada. O relatorio dele vai para a pasta do log, e nao para a Area
+    # de Trabalho, senao nasceria um arquivo novo la a cada 30 minutos.
+    # Na simulacao nao roda, porque o kit grava no .claude\ do Cerebro.
+    $kitScript = Join-Path $Cerebro $Kit
+    if ($SemKit -or $Simular) {
+        # nada
+    } elseif (-not (Test-Path -LiteralPath $kitScript)) {
+        Registrar "[!] Kit Claude nao publicado: $kitScript nao existe."
+    } else {
+        $kitLog = Join-Path (Split-Path $Log -Parent) 'kit-claude-github.txt'
+        $anterior = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $kitScript `
+            -Executar -Cerebro $Cerebro -Log $kitLog 2>&1 | Out-Null
+        $kitCodigo = $LASTEXITCODE
+        $ErrorActionPreference = $anterior
+        if ($kitCodigo -ne 0) {
+            Registrar "[!] Kit Claude falhou (codigo $kitCodigo) - o Cerebro segue sem ele. Veja $kitLog"
+        }
+    }
 
     # ------------------------------------------------------------- 1. add
     RodarGit add -A | Out-Null
