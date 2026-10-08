@@ -295,7 +295,10 @@ if ($Corrigir) {
 if ($ImprimirTeste) {
     Titulo 'ETIQUETA DE TESTE'
     if ($alvos.Count -ne 1) {
-        Escrever ("Encontrei {0} impressoras de etiqueta. Diga qual com -Impressora `"Nome`"." -f $alvos.Count)
+        Escrever ("Encontrei {0} impressoras de etiqueta. Nada foi impresso. Escolha uma:" -f $alvos.Count)
+        foreach ($a in $alvos) {
+            Escrever ("  .\5-impressora-etiquetas.ps1 -ImprimirTeste -Impressora `"{0}`"" -f $a.Name)
+        }
     } else {
         $p = $alvos[0]
         $ling = if ($Linguagem -ne 'Auto') { $Linguagem } else { LinguagemProvavel $p.Name $p.DriverName }
