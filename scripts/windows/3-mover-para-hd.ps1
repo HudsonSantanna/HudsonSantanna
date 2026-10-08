@@ -17,7 +17,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Origem,
     [Parameter(Mandatory = $true)][string]$Destino,
     [switch]$Remover,
-    [string]$Log = "$env:USERPROFILE\Desktop\movimentacao-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Log = "$([Environment]::GetFolderPath('Desktop'))\movimentacao-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
 )
 
 $ErrorActionPreference = 'Stop'
