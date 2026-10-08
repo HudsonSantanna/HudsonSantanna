@@ -47,8 +47,8 @@ Diagnóstico (só lê):
 powershell -ExecutionPolicy Bypass -File .\5-impressora-etiquetas.ps1
 ```
 
-Reconhece as marcas mais comuns (Zebra, Elgin, Argox, TSC, Honeywell, Datamax,
-Gainscha...) e mostra para cada uma:
+Reconhece as marcas mais comuns (Zebra, Bixolon, Elgin, Argox, TSC, Honeywell,
+Datamax, Gainscha...) e mostra para cada uma:
 
 - driver e **versão do driver**, e o site do fabricante para baixar a versão nova
 - porta: se for **USB**, se o aparelho está conectado; se for **rede**, se o IP responde
@@ -89,6 +89,7 @@ A linguagem é escolhida pela marca:
 | Marca | Linguagem |
 |---|---|
 | Zebra (ZDesigner) | `ZPL` |
+| Bixolon com driver "BPL-Z" (ex.: XD3-40t) | `ZPL` |
 | Zebra LP/TLP 2844, drivers "(EPL)", PPLB | `EPL` |
 | Elgin L42, Argox | `PPLA` (sai só o texto, sem código de barras) |
 | TSC, Gainscha | `TSPL` |

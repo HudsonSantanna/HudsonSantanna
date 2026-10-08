@@ -79,8 +79,10 @@ if ($wu.StartType -eq 'Disabled') {
 if ($Executar) {
     Titulo 'PONTO DE RESTAURACAO'
     Enable-ComputerRestore -Drive "$env:SystemDrive\"
-    Checkpoint-Computer -Description 'Antes de 4-atualizar-sistema' -RestorePointType MODIFY_SETTINGS -ErrorAction SilentlyContinue -ErrorVariable erroPonto
-    if ($erroPonto) {
+    # Quando ja existe um ponto recente o Windows so AVISA (nao da erro).
+    Checkpoint-Computer -Description 'Antes de 4-atualizar-sistema' -RestorePointType MODIFY_SETTINGS `
+        -ErrorAction SilentlyContinue -ErrorVariable erroPonto -WarningAction SilentlyContinue -WarningVariable avisoPonto
+    if ($erroPonto -or $avisoPonto) {
         Escrever 'Nao foi possivel criar agora (o Windows so permite um a cada 24 h).'
         Escrever 'Seguindo assim mesmo: o Windows Update tambem guarda como desinstalar.'
     } else {
@@ -153,6 +155,9 @@ if ($SemProgramas) {
     Escrever 'para que os programas tambem sejam atualizados por aqui.'
 } else {
     $aceites = @('--accept-source-agreements', '--disable-interactivity')
+    # winget escreve em UTF-8; sem isso os acentos saem trocados no console.
+    $codificacaoAnterior = [Console]::OutputEncoding
+    [Console]::OutputEncoding = [Text.Encoding]::UTF8
     if ($Executar) {
         Escrever 'Atualizando todos os programas com versao nova disponivel...'
         Escrever '(alguns podem pedir para fechar o programa antes)'
@@ -162,6 +167,7 @@ if ($SemProgramas) {
         $saida = & winget upgrade @aceites 2>$null
         $saida | Where-Object { $_ -match '\S' -and $_ -notmatch '^[\s\-\\|/]+$' } | ForEach-Object { Escrever $_ }
     }
+    [Console]::OutputEncoding = $codificacaoAnterior
 }
 
 # ---------------------------------------------------------------- antivirus

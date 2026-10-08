@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 <#
     5-impressora-etiquetas.ps1 - Diagnostico e reparo da impressora de codigo
-    de barras / etiquetas (Zebra, Elgin, Argox, TSC, Honeywell, Datamax...).
+    de barras / etiquetas (Zebra, Bixolon, Elgin, Argox, TSC, Honeywell...).
 
     Sem parametros apenas LE e mostra: driver e versao, porta (USB ou rede),
     fila de impressao, se esta "offline", copias duplicadas da impressora.
@@ -13,7 +13,7 @@
       ... -ImprimirTeste -Impressora "ZDesigner GC420t" -Linguagem ZPL
       ... -Impressora "Nome"              # forca qual impressora examinar
 
-    Linguagens do teste: ZPL (Zebra), EPL (Zebra antigas LP/TLP 2844, PPLB),
+    Linguagens do teste: ZPL (Zebra, Bixolon BPL-Z), EPL (Zebra antigas LP/TLP 2844, PPLB),
     PPLA (Elgin L42, Argox), TSPL (TSC, Gainscha). Se nao reconhecer a marca,
     informe com -Linguagem. O teste nao altera configuracoes da impressora.
 #>
@@ -49,11 +49,12 @@ function EhAdmin {
 # Nomes de modelos e drivers de impressoras de etiqueta mais comuns.
 $padraoEtiqueta = 'Zebra|ZDesigner|\bG[CKX]4\d\d|\bZD\d{3}|\bZT\d{3}|\bGT8\d\d|2844|Elgin|\bL42|Argox|\bOS-2\d\d|' +
                   'Honeywell|Intermec|Datamax|\bTSC\b|\bTTP-|\bTE2\d\d|\bTDP-|Gainscha|Gprinter|Godex|' +
-                  'Bematech LB|Brother QL|DYMO|Etiqueta|Label'
+                  'Bixolon|BPL-[ZE]|Bematech LB|Brother QL|DYMO|Etiqueta|Label'
 
 function LinguagemProvavel($Nome, $Driver) {
     $t = "$Nome $Driver"
-    if ($t -match 'EPL|PPLB|2844')                       { return 'EPL' }
+    if ($t -match 'BPL-Z')                               { return 'ZPL' }
+    if ($t -match 'EPL|PPLB|BPL-E|2844')                 { return 'EPL' }
     if ($t -match 'Zebra|ZDesigner')                     { return 'ZPL' }
     if ($t -match 'Elgin|Argox|PPLA|\bL42|\bOS-2\d\d')   { return 'PPLA' }
     if ($t -match '\bTSC\b|\bTTP-|\bTE2\d\d|\bTDP-|Gainscha|Gprinter') { return 'TSPL' }
@@ -66,6 +67,7 @@ function SiteDoFabricante($Texto) {
         'Elgin|\bL42'       { return 'https://www.elgin.com.br (Suporte -> Downloads)' }
         'Argox'             { return 'https://www.argox.com (Support -> Download)' }
         'TSC|TTP-|TE2|TDP-' { return 'https://www.tscprinters.com (Support -> Downloads)' }
+        'Bixolon|BPL-'      { return 'https://www.bixolon.com (Download Center) ou https://drivers.loftware.com/brand/bixolon' }
         'Honeywell|Intermec|Datamax' { return 'https://sps.honeywell.com (Support -> Software/Drivers)' }
     }
     return 'site do fabricante (area de suporte / downloads)'
@@ -225,11 +227,14 @@ foreach ($p in $alvos) {
         $responde = Test-Connection -ComputerName $ip -Count 2 -Quiet
         Escrever ("Rede ..........: {0} -> {1}" -f $ip, $(if ($responde) { 'responde' } else { 'NAO RESPONDE (cabo, IP ou impressora desligada)' }))
     } elseif ($p.PortName -match '^USB') {
-        $usb = @(Get-PnpDevice -PresentOnly | Where-Object {
-            $_.Class -in @('Printer', 'USB') -and $_.FriendlyName -match $padraoEtiqueta })
+        # O aparelho USB costuma aparecer com o nome do driver ou do modelo.
+        $usb = @(Get-PnpDevice -PresentOnly -Class Printer | Where-Object {
+            $_.FriendlyName -eq $p.DriverName -or $_.FriendlyName -eq $p.Name -or
+            $_.FriendlyName -match $padraoEtiqueta })
         if ($usb.Count -eq 0) {
-            Escrever 'USB ...........: nenhum dispositivo de etiqueta conectado agora.'
-            Escrever '                  Confira cabo, tomada e se a impressora esta ligada.'
+            Escrever 'USB ...........: nao achei o aparelho pelo nome. Se o Estado acima e "Normal"'
+            Escrever '                  e a etiqueta de teste sai, ignore. Se nao sai, confira cabo,'
+            Escrever '                  tomada e se a impressora esta ligada.'
         }
         foreach ($d in $usb) {
             Escrever ("USB ...........: {0} [{1}]" -f $d.FriendlyName, $d.Status)
