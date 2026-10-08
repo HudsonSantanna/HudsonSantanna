@@ -17,7 +17,7 @@ param(
     [switch]$DesativarHibernacao,
     [switch]$LimparComponentes,
     [switch]$EsvaziarLixeira,
-    [string]$Log = "$env:USERPROFILE\Desktop\limpeza-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Log = "$([Environment]::GetFolderPath('Desktop'))\limpeza-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
@@ -175,6 +175,14 @@ if ($Executar) {
     Escrever '  .\2-limpeza.ps1 -Executar -EsvaziarLixeira -DesativarHibernacao'
 }
 
-$script:Linhas | Out-File -FilePath $Log -Encoding UTF8
-Write-Host ''
-Write-Host "Log salvo em: $Log" -ForegroundColor Green
+# Nao dizer "salvo" sem ter salvo: a Area de Trabalho pode estar no OneDrive ou bloqueada.
+try {
+    $script:Linhas | Out-File -FilePath $Log -Encoding UTF8 -ErrorAction Stop
+    Write-Host ''
+    Write-Host "Log salvo em: $Log" -ForegroundColor Green
+} catch {
+    Write-Host ''
+    Write-Host "*** NAO consegui salvar o arquivo em $Log" -ForegroundColor Red
+    Write-Host "*** Motivo: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host '*** Rode de novo informando outra pasta, ex.: -Log "C:\Temp\relatorio.txt"' -ForegroundColor Red
+}

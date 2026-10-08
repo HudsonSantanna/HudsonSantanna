@@ -14,7 +14,7 @@ param(
     [int]   $TopPastas  = 20,
     [int]   $TopArquivos= 30,
     [int]   $MinimoMB   = 300,
-    [string]$Saida      = "$env:USERPROFILE\Desktop\diagnostico-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Saida      = "$([Environment]::GetFolderPath('Desktop'))\diagnostico-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
@@ -232,6 +232,14 @@ Escrever '  1. Leia este relatorio e marque o que quer preservar.'
 Escrever '  2. Rode  2-limpeza.ps1  (primeiro sem parametros: ele so simula).'
 Escrever '  3. Use   3-mover-para-hd.ps1  para tirar do PC o que for grande e antigo.'
 
-$script:Linhas | Out-File -FilePath $Saida -Encoding UTF8
-Write-Host ''
-Write-Host "Relatorio salvo em: $Saida" -ForegroundColor Green
+# Nao dizer "salvo" sem ter salvo: a Area de Trabalho pode estar no OneDrive ou bloqueada.
+try {
+    $script:Linhas | Out-File -FilePath $Saida -Encoding UTF8 -ErrorAction Stop
+    Write-Host ''
+    Write-Host "Relatorio salvo em: $Saida" -ForegroundColor Green
+} catch {
+    Write-Host ''
+    Write-Host "*** NAO consegui salvar o arquivo em $Saida" -ForegroundColor Red
+    Write-Host "*** Motivo: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host '*** Rode de novo informando outra pasta, ex.: -Saida "C:\Temp\relatorio.txt"' -ForegroundColor Red
+}

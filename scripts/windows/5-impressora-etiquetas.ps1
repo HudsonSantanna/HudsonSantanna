@@ -34,7 +34,7 @@ param(
     [int]$Escuro = -1,
     [ValidateSet('Auto', 'ZPL', 'EPL', 'PPLA', 'TSPL')]
     [string]$Linguagem = 'Auto',
-    [string]$Log = "$env:USERPROFILE\Desktop\impressora-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Log = "$([Environment]::GetFolderPath('Desktop'))\impressora-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
@@ -422,6 +422,14 @@ Escrever '     Antes de instalar, anote as configuracoes da impressora (tamanho 
 Escrever '     velocidade, temperatura/escurecimento) - um driver novo pode voltar ao padrao.'
 Escrever '  3. Depois, rode este script com -ImprimirTeste.'
 
-$script:Linhas | Out-File -FilePath $Log -Encoding UTF8
-Write-Host ''
-Write-Host "Relatorio salvo em: $Log" -ForegroundColor Green
+# Nao dizer "salvo" sem ter salvo: a Area de Trabalho pode estar no OneDrive ou bloqueada.
+try {
+    $script:Linhas | Out-File -FilePath $Log -Encoding UTF8 -ErrorAction Stop
+    Write-Host ''
+    Write-Host "Relatorio salvo em: $Log" -ForegroundColor Green
+} catch {
+    Write-Host ''
+    Write-Host "*** NAO consegui salvar o arquivo em $Log" -ForegroundColor Red
+    Write-Host "*** Motivo: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host '*** Rode de novo informando outra pasta, ex.: -Log "C:\Temp\relatorio.txt"' -ForegroundColor Red
+}
