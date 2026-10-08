@@ -11,6 +11,8 @@
       ... -Corrigir                       # destrava a fila e coloca a impressora online
       ... -ImprimirTeste                  # imprime UMA etiqueta de teste com codigo de barras
       ... -ImprimirTeste -Impressora "ZDesigner GC420t" -Linguagem ZPL
+      ... -Identificar                    # QUEM E QUEM: 1 etiqueta por porta USB com o nome da porta
+                                          # e das filas (para quem tem 2 impressoras iguais)
       ... -Impressora "Nome"              # forca qual impressora examinar
 
     Linguagens do teste: ZPL (Zebra, Bixolon BPL-Z), EPL (Zebra antigas LP/TLP 2844, PPLB),
@@ -22,6 +24,7 @@ param(
     [string]$Impressora,
     [switch]$Corrigir,
     [switch]$ImprimirTeste,
+    [switch]$Identificar,
     [ValidateSet('Auto', 'ZPL', 'EPL', 'PPLA', 'TSPL')]
     [string]$Linguagem = 'Auto',
     [string]$Log = "$env:USERPROFILE\Desktop\impressora-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
@@ -106,13 +109,13 @@ public static class ImpressaoRaw {
     [DllImport("winspool.drv", SetLastError = true)]
     static extern bool WritePrinter(IntPtr h, byte[] dados, int tamanho, out int escritos);
 
-    public static string Enviar(string impressora, byte[] dados) {
+    public static string Enviar(string impressora, byte[] dados, string documento) {
         IntPtr h;
         if (!OpenPrinter(impressora, out h, IntPtr.Zero))
             return "nao abriu a impressora (erro " + Marshal.GetLastWin32Error() + ")";
         try {
             DOCINFO di = new DOCINFO();
-            di.pDocName = "Teste de etiqueta";
+            di.pDocName = documento;
             di.pDataType = "RAW";
             if (StartDocPrinter(h, 1, di) == 0)
                 return "nao iniciou o documento (erro " + Marshal.GetLastWin32Error() + ")";
@@ -129,6 +132,22 @@ public static class ImpressaoRaw {
     }
 }
 '@
+
+# Etiqueta de identificacao em ZPL, repetida nas 2 colunas (rolo de 2 por linha
+# nao desperdica a da direita). Nao muda o tipo de midia da impressora.
+function EtiquetaIdentificacao([string]$Porta, [string[]]$Filas) {
+    $z = '^XA^PW816^LL240'
+    foreach ($x in 16, 432) {
+        $z += "^FO$x,20^A0N,45,45^FD$Porta^FS"
+        $y = 75
+        foreach ($f in ($Filas | Select-Object -First 4)) {
+            $t = if ($f.Length -gt 30) { $f.Substring(0, 30) } else { $f }
+            $z += "^FO$x,$y^A0N,24,24^FD$t^FS"
+            $y += 32
+        }
+    }
+    $z + "^XZ`r`n"
+}
 
 function EtiquetaTeste([string]$Ling) {
     $linha2 = "$env:COMPUTERNAME $(Get-Date -Format 'dd/MM/yyyy HH:mm')"
@@ -291,6 +310,53 @@ if ($Corrigir) {
     }
 }
 
+# ----------------------------------------------------------- quem e quem
+if ($Identificar) {
+    Titulo 'QUEM E QUEM (uma etiqueta por porta USB)'
+
+    # Portas com impressora USB ligada agora, segundo o registro do Windows.
+    $classe = 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceClasses\{28d78fad-5a12-11d1-ae5b-0000f803a8c2}'
+    $ligadas = @(Get-ChildItem $classe | ForEach-Object {
+        $dp = Get-ItemProperty "$($_.PSPath)\#\Device Parameters"
+        $ct = Get-ItemProperty "$($_.PSPath)\#\Control"
+        if ($ct.Linked -and $null -ne $dp.'Port Number') { 'USB{0:D3}' -f [int]$dp.'Port Number' }
+    } | Sort-Object -Unique)
+    Escrever ("Portas com impressora ligada agora: {0}" -f $(if ($ligadas) { $ligadas -join ', ' } else { '(nao consegui ler)' }))
+    Escrever ''
+
+    Add-Type -TypeDefinition $codigoRaw -ErrorAction Stop
+    $portas = @($alvos | Where-Object { $_.PortName -match '^USB' } | ForEach-Object PortName | Sort-Object -Unique)
+    $enviados = @()
+    foreach ($porta in $portas) {
+        $filas = @($todas | Where-Object { $_.PortName -eq $porta } | ForEach-Object Name)
+        $fila  = ($alvos | Where-Object { $_.PortName -eq $porta } | Select-Object -First 1).Name
+        $doc   = "Identificacao $porta"
+        $bytes = [Text.Encoding]::ASCII.GetBytes((EtiquetaIdentificacao $porta $filas))
+        $erro  = [ImpressaoRaw]::Enviar($fila, $bytes, $doc)
+        if ($erro) { Escrever "$porta : falhou ao enviar ($erro)"; continue }
+        Escrever ("{0} : enviada pela fila `"{1}`"  (filas nesta porta: {2})" -f $porta, $fila, ($filas -join ', '))
+        $enviados += [pscustomobject]@{ Porta = $porta; Fila = $fila; Doc = $doc }
+    }
+
+    if ($enviados) {
+        Escrever ''
+        Escrever 'Aguardando 10 segundos para ver o que saiu da fila...'
+        Start-Sleep -Seconds 10
+        foreach ($e in $enviados) {
+            $preso = Get-PrintJob -PrinterName $e.Fila | Where-Object { $_.DocumentName -eq $e.Doc }
+            if ($preso) {
+                $preso | ForEach-Object { Remove-PrintJob -PrinterName $e.Fila -ID $_.Id }
+                Escrever ("{0} : NAO SAIU - nenhuma impressora nesta porta (trabalho removido da fila)." -f $e.Porta)
+            } else {
+                Escrever ("{0} : saiu. Veja em qual impressora apareceu a etiqueta escrita {0}." -f $e.Porta)
+            }
+        }
+        Escrever ''
+        Escrever 'Se a etiqueta saiu EM BRANCO numa impressora de etiqueta colorida (sem papel termico),'
+        Escrever 'confira o ribbon (fita): acabou, rasgou ou esta do lado errado.'
+    }
+}
+
 # --------------------------------------------------------------------- teste
 if ($ImprimirTeste) {
     Titulo 'ETIQUETA DE TESTE'
@@ -311,7 +377,7 @@ if ($ImprimirTeste) {
             Add-Type -TypeDefinition $codigoRaw -ErrorAction Stop
             $bytes = [Text.Encoding]::ASCII.GetBytes((EtiquetaTeste $ling))
             Escrever ("Enviando teste em {0} para {1}..." -f $ling, $p.Name)
-            $erro = [ImpressaoRaw]::Enviar($p.Name, $bytes)
+            $erro = [ImpressaoRaw]::Enviar($p.Name, $bytes, 'Teste de etiqueta')
             if ($erro) {
                 Escrever "Falhou: $erro"
             } else {

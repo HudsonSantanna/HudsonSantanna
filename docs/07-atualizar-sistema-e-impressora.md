@@ -73,6 +73,18 @@ Reinicia o serviço de impressão, esvazia a fila travada e tira a impressora do
 modo offline. **Atenção:** descarta os trabalhos pendentes de todas as
 impressoras — mande imprimir de novo depois.
 
+### Duas impressoras iguais: quem é quem
+
+```powershell
+.\5-impressora-etiquetas.ps1 -Identificar
+```
+
+Manda **uma etiqueta por porta USB**, escrita com o número da porta (ex.: `USB003`)
+e o nome das filas que usam essa porta. Veja em qual impressora cada uma saiu.
+Porta sem impressora: o script avisa "NAO SAIU" e tira o trabalho da fila, para
+não sair de surpresa depois. Útil quando há duas impressoras do mesmo modelo
+(ex.: duas Bixolon) e o Windows troca as portas depois de reiniciar.
+
 ### Etiqueta de teste
 
 ```powershell
