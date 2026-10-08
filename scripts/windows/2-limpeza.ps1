@@ -17,7 +17,7 @@ param(
     [switch]$DesativarHibernacao,
     [switch]$LimparComponentes,
     [switch]$EsvaziarLixeira,
-    [string]$Log = "$env:USERPROFILE\Desktop\limpeza-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Log = "$([Environment]::GetFolderPath('Desktop'))\limpeza-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
 )
 
 $ErrorActionPreference = 'SilentlyContinue'

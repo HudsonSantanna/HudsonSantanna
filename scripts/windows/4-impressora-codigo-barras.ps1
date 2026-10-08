@@ -31,7 +31,7 @@ param(
     [string]$Modo          = 'Direta',
     [switch]$Imprimir,
     [switch]$LimparFila,
-    [string]$Saida         = "$env:USERPROFILE\Desktop\impressora-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Saida         = "$([Environment]::GetFolderPath('Desktop'))\impressora-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
 )
 
 $ErrorActionPreference = 'SilentlyContinue'

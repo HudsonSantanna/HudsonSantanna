@@ -14,7 +14,7 @@ param(
     [int]   $TopPastas  = 20,
     [int]   $TopArquivos= 30,
     [int]   $MinimoMB   = 300,
-    [string]$Saida      = "$env:USERPROFILE\Desktop\diagnostico-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Saida      = "$([Environment]::GetFolderPath('Desktop'))\diagnostico-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
