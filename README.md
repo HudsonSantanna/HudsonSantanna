@@ -57,6 +57,8 @@ sudo /home/partimag/scripts/restaurar-maquina.sh       # grava em outra máquina
 | `scripts/windows/1-diagnostico.ps1`   | Windows     | Relatório de espaço, saúde dos discos, maiores pastas e arquivos |
 | `scripts/windows/2-limpeza.ps1`       | Windows     | Libera caches e temporários (simula por padrão) |
 | `scripts/windows/3-mover-para-hd.ps1` | Windows     | Copia para HD externo, confere e só então apaga a origem |
+| `scripts/windows/4-atualizar-sistema.ps1`   | Windows | Windows Update (com drivers), programas (winget) e antivírus (lista por padrão) |
+| `scripts/windows/5-impressora-etiquetas.ps1` | Windows | Diagnóstico, destrava fila e etiqueta de teste da impressora de código de barras |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada).
 
@@ -68,7 +70,8 @@ Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nad
 4. [Solução de problemas](docs/04-solucao-de-problemas.md)
 5. [Preparar o pendrive pelo Windows](docs/05-preparar-pelo-windows.md)
 6. [Manutenção da máquina no Windows](docs/06-manutencao-windows.md)
-7. [Checklist de campo](docs/checklist.md)
+7. [Atualizar o sistema e a impressora de código de barras](docs/07-atualizar-sistema-e-impressora.md)
+8. [Checklist de campo](docs/checklist.md)
 
 ## Requisitos
 
