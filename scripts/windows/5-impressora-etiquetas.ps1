@@ -13,6 +13,8 @@
       ... -ImprimirTeste -Impressora "ZDesigner GC420t" -Linguagem ZPL
       ... -Identificar                    # QUEM E QUEM: 1 etiqueta por porta USB com o nome da porta
                                           # e das filas (para quem tem 2 impressoras iguais)
+      ... -Transferencia                  # junto com -Identificar/-ImprimirTeste em ZPL: forca o modo
+                                          # transferencia termica (etiqueta que precisa de ribbon/fita)
       ... -Impressora "Nome"              # forca qual impressora examinar
 
     Linguagens do teste: ZPL (Zebra, Bixolon BPL-Z), EPL (Zebra antigas LP/TLP 2844, PPLB),
@@ -25,6 +27,7 @@ param(
     [switch]$Corrigir,
     [switch]$ImprimirTeste,
     [switch]$Identificar,
+    [switch]$Transferencia,
     [ValidateSet('Auto', 'ZPL', 'EPL', 'PPLA', 'TSPL')]
     [string]$Linguagem = 'Auto',
     [string]$Log = "$env:USERPROFILE\Desktop\impressora-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
@@ -136,7 +139,7 @@ public static class ImpressaoRaw {
 # Etiqueta de identificacao em ZPL, repetida nas 2 colunas (rolo de 2 por linha
 # nao desperdica a da direita). Nao muda o tipo de midia da impressora.
 function EtiquetaIdentificacao([string]$Porta, [string[]]$Filas) {
-    $z = '^XA^PW816^LL240'
+    $z = '^XA^PW816^LL240' + $(if ($Transferencia) { '^MTT' } else { '' })
     foreach ($x in 16, 432) {
         $z += "^FO$x,20^A0N,45,45^FD$Porta^FS"
         $y = 75
@@ -153,7 +156,7 @@ function EtiquetaTeste([string]$Ling) {
     $linha2 = "$env:COMPUTERNAME $(Get-Date -Format 'dd/MM/yyyy HH:mm')"
     $cr = "`r`n"
     switch ($Ling) {
-        'ZPL'  { return "^XA^FO30,30^A0N,35,35^FDTESTE DE IMPRESSAO^FS" +
+        'ZPL'  { return "^XA$(if ($Transferencia) { '^MTT' })^FO30,30^A0N,35,35^FDTESTE DE IMPRESSAO^FS" +
                         "^FO30,75^A0N,25,25^FD$linha2^FS" +
                         "^FO30,115^BCN,70,Y,N,N^FD123456789^FS^XZ$cr" }
         'EPL'  { return $cr + "N$cr" +
@@ -336,6 +339,11 @@ if ($Identificar) {
     $portas = @($alvos | Where-Object { $_.PortName -match '^USB' } | ForEach-Object PortName | Sort-Object -Unique)
     $enviados = @()
     foreach ($porta in $portas) {
+        if ($ligadas.Count -gt 0 -and $ligadas.Porta -notcontains $porta) {
+            $filas = @($todas | Where-Object { $_.PortName -eq $porta } | ForEach-Object Name)
+            Escrever ("{0} : SEM IMPRESSORA nesta porta - nada enviado. Filas que mandam para o vazio: {1}" -f $porta, ($filas -join ', '))
+            continue
+        }
         $filas = @($todas | Where-Object { $_.PortName -eq $porta } | ForEach-Object Name)
         $fila  = ($alvos | Where-Object { $_.PortName -eq $porta } | Select-Object -First 1).Name
         $doc   = "Identificacao $porta"
