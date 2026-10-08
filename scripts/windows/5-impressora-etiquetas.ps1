@@ -314,14 +314,22 @@ if ($Corrigir) {
 if ($Identificar) {
     Titulo 'QUEM E QUEM (uma etiqueta por porta USB)'
 
-    # Portas com impressora USB ligada agora, segundo o registro do Windows.
-    $classe = 'HKLM:\SYSTEM\CurrentControlSet\Control\DeviceClasses\{28d78fad-5a12-11d1-ae5b-0000f803a8c2}'
-    $ligadas = @(Get-ChildItem $classe | ForEach-Object {
-        $dp = Get-ItemProperty "$($_.PSPath)\#\Device Parameters"
-        $ct = Get-ItemProperty "$($_.PSPath)\#\Control"
-        if ($ct.Linked -and $null -ne $dp.'Port Number') { 'USB{0:D3}' -f [int]$dp.'Port Number' }
-    } | Sort-Object -Unique)
-    Escrever ("Portas com impressora ligada agora: {0}" -f $(if ($ligadas) { $ligadas -join ', ' } else { '(nao consegui ler)' }))
+    # Impressoras USB ligadas agora: o InstanceId do USBPRINT termina na porta (ex.: ...&USB004).
+    $ligadas = @(Get-PnpDevice -PresentOnly | Where-Object { $_.InstanceId -match '^USBPRINT\\.*(USB\d{3})$' } |
+        ForEach-Object { [pscustomobject]@{ Porta = ($_.InstanceId -replace '^.*(USB\d{3})$', '$1'); Nome = $_.FriendlyName; Status = $_.Status } } |
+        Sort-Object Porta)
+    if ($ligadas.Count -eq 0) {
+        Escrever 'Nenhuma impressora USB ligada encontrada pelo Windows.'
+    }
+    foreach ($l in $ligadas) {
+        $filasDaPorta = @($todas | Where-Object { $_.PortName -eq $l.Porta } | ForEach-Object Name)
+        $txt = if ($filasDaPorta) { 'filas: ' + ($filasDaPorta -join ', ') } else { 'NENHUMA FILA USA ESTA PORTA' }
+        Escrever ("Ligada em {0}: {1} [{2}] -> {3}" -f $l.Porta, $l.Nome, $l.Status, $txt)
+        if (-not $filasDaPorta) {
+            Escrever ("   ^^ Esta impressora nao recebe nada. Para a fila certa usar esta porta:")
+            Escrever ("      Set-Printer -Name `"NOME DA FILA`" -PortName {0}" -f $l.Porta)
+        }
+    }
     Escrever ''
 
     Add-Type -TypeDefinition $codigoRaw -ErrorAction Stop
