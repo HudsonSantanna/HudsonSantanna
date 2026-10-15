@@ -155,8 +155,10 @@ if ($LimparComponentes) {
         Escrever 'Limpeza de componentes: precisa de administrador. Pulado.'
     } elseif ($Executar) {
         Escrever ''
-        Escrever 'Analisando e limpando o repositorio de componentes (pode levar 20 min)...'
-        Dism.exe /Online /Cleanup-Image /StartComponentCleanup /ResetBase | Out-Null
+        Escrever 'Analisando e limpando o repositorio de componentes (20 a 60 min, nao feche)...'
+        # Sem Out-Null: o DISM mostra a propria barra de progresso; escondida,
+        # parece que travou nos 20-60 min que pode levar.
+        Dism.exe /Online /Cleanup-Image /StartComponentCleanup /ResetBase
         Escrever '[limpo]   Repositorio de componentes (WinSxS) compactado.'
         Escrever '          Atencao: com /ResetBase nao da mais para desinstalar'
         Escrever '          atualizacoes antigas do Windows.'
