@@ -128,12 +128,18 @@ if ($EsvaziarLixeira) {
 
 # --------------------------------------------------------- hibernacao
 if ($DesativarHibernacao) {
-    $hiber = Get-Item -LiteralPath "$unidade\hiberfil.sys" -Force
-    $tamHiber = if ($hiber) { $hiber.Length } else { 0 }
+    # Get-Item falha no hiberfil.sys (arquivo travado pelo sistema); listar a
+    # pasta le o tamanho direto do diretorio, sem abrir o arquivo.
+    $hiber = Get-ChildItem -Path "$unidade\" -Filter 'hiberfil.sys' -Force
+    $tamHiber = if ($hiber) { [int64]$hiber.Length } else { [int64]0 }
     if (-not (EhAdmin)) {
         Escrever 'Hibernacao: precisa de administrador. Pulado.'
     } elseif ($Executar) {
+        $livreA = (Get-Volume -DriveLetter $unidade.TrimEnd(':')).SizeRemaining
         powercfg /hibernate off | Out-Null
+        Start-Sleep -Seconds 2
+        $ganhoHiber = (Get-Volume -DriveLetter $unidade.TrimEnd(':')).SizeRemaining - $livreA
+        if ($ganhoHiber -gt $tamHiber) { $tamHiber = $ganhoHiber }
         $script:Liberado += $tamHiber
         Escrever ('[limpo]   {0,-28} liberou   {1}' -f 'Hibernacao desativada', (ComoGB $tamHiber))
         Escrever '          (o modo de suspensao continua funcionando)'
