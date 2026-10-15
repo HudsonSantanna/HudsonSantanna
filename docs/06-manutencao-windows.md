@@ -83,6 +83,12 @@ Ele pede que você digite `APAGAR` para confirmar.
 > Troque `E:` pela letra do seu HD externo, e o caminho de origem pelo que
 > aparecer no relatório.
 
+## Vai formatar?
+
+Antes, siga [Backup completo, duplicados e formatação](07-backup-e-formatacao.md):
+testa o acesso ao servidor, copia tudo para o `E:`, confere e remove duplicados
+da cópia.
+
 ## Se der "não é possível carregar o arquivo... não está assinado digitalmente"
 
 É a política de execução do PowerShell. O `-ExecutionPolicy Bypass` nos comandos
