@@ -30,10 +30,18 @@ param(
     [string[]]$Ignorar    = @('\Windows\', '\Program Files\', '\Program Files (x86)\',
                               '\ProgramData\', '\AppData\', '\$Recycle.Bin\',
                               '\System Volume Information\', '\node_modules\', '\.git\'),
-    [string]  $Saida      = "$env:USERPROFILE\Desktop\duplicados-$(Get-Date -Format 'yyyyMMdd-HHmm')"
+    [string]  $Saida
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Com OneDrive a Area de Trabalho vira "...\OneDrive\Area de Trabalho" e
+# "$env:USERPROFILE\Desktop" nao existe: o relatorio falharia no fim.
+if (-not $Saida) {
+    $desk = [Environment]::GetFolderPath('Desktop')
+    if (-not $desk -or -not (Test-Path -LiteralPath $desk)) { $desk = $env:USERPROFILE }
+    $Saida = Join-Path $desk "duplicados-$(Get-Date -Format 'yyyyMMdd-HHmm')"
+}
 
 function ComoGB($Bytes) { '{0,8:N2} GB' -f ($Bytes / 1GB) }
 function Ignorado([string]$Caminho) {
@@ -62,6 +70,9 @@ $arquivos = foreach ($p in $Pasta) {
             -not (Ignorado $_.FullName)
         }
 }
+# Pastas sobrepostas (-Pasta "E:\B","E:\B\Usuario") listam o mesmo arquivo
+# duas vezes; sem isto ele seria "duplicado de si mesmo" e o -Apagar o apagaria.
+$arquivos = @($arquivos | Sort-Object FullName -Unique)
 Write-Host ("{0} arquivos analisados." -f @($arquivos).Count)
 
 # So calcula hash de quem tem tamanho repetido: e o que deixa a busca rapida.

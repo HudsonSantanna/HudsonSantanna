@@ -388,8 +388,16 @@ if ($bl) {
 
 if (EhAdmin) {
     Escrever '  exportando drivers (alguns minutos)...'
-    Export-WindowsDriver -Online -Destination (Join-Path $sis 'drivers') -ErrorAction SilentlyContinue | Out-Null
-    Escrever '  drivers\  (reinstale com: pnputil /add-driver drivers\*.inf /subdirs /install)'
+    # O DISM nao cria a pasta de destino: sem ela, a exportacao falha.
+    $pastaDrivers = Join-Path $sis 'drivers'
+    New-Item -ItemType Directory -Path $pastaDrivers -Force | Out-Null
+    try {
+        Export-WindowsDriver -Online -Destination $pastaDrivers -ErrorAction Stop | Out-Null
+        Escrever '  drivers\  (reinstale com: pnputil /add-driver drivers\*.inf /subdirs /install)'
+    } catch {
+        Escrever "  drivers\  FALHOU: $($_.Exception.Message)" 'Yellow'
+        Escrever '            Baixe o driver de rede/Wi-Fi no site do fabricante antes de formatar.' 'Yellow'
+    }
 }
 
 # ================================================================ 6. conferencia
