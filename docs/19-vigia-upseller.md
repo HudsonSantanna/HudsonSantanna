@@ -4,6 +4,11 @@ Este documento é a **especificação** de um agente que ainda não existe. Ele 
 escrito para o Claude Code do **KHAOSOMNI**, que tem o cérebro e acesso à
 máquina das impressoras, e que vai construir e ativar o agente lá.
 
+> **Situação em 15/10:** o agente foi construído e roda na `HUDSONINTEGRAR`
+> (tarefa `ARGOS - Vigia UpSeller`, log `%LOCALAPPDATA%\Argos\vigia-upseller.log`).
+> O código está na máquina, não aqui. Manutenção, diagnóstico e pendências:
+> [doc 20](20-manutencao-vigias.md).
+
 ## O que o agente faz — e só isso
 
 A cada **30 minutos**, entre **07:00 e 20:00** (ajustável):
@@ -73,8 +78,11 @@ PJ é justamente o caso em que as outras duas classes podem ter a mesma lacuna.
 - **Leia a tela de verdade antes de escrever seletor.** Prefira texto visível
   ("Falha na Emissão", "Para Programar") a classes CSS, que mudam.
 - Tarefa agendada `ARGOS - Vigia UpSeller`, **Interactive** (usuário logado), a
-  cada 30 min, `MultipleInstances IgnoreNew`. Entra também na lista
-  `scripts/windows/rotinas-essenciais.txt` do `/verificar-agentes`.
+  cada 30 min, `MultipleInstances IgnoreNew` e **`ExecutionTimeLimit` de
+  25 min**. Sem esse limite vale o padrão do Windows, 72 h: uma rodada que
+  trava faz o Agendador ignorar todas as seguintes (foi o caso de 15/10, doc
+  20). Entra também na lista `scripts/windows/rotinas-essenciais.txt` do
+  `/verificar-agentes`.
 - **WhatsApp:** reaproveite o que o cérebro já usa para mandar mensagem. Se não
   houver nada pronto, **pare e pergunte**: não crie conta, API ou serviço novo
   sem aprovação. O número de destino fica num arquivo de configuração local
