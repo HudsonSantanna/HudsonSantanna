@@ -657,16 +657,23 @@ foreach ($r in $reparos) {
         }
         'Parar' {
             # Primeiro a arvore (o Chrome e filho do vigia), depois o estado no Agendador.
-            foreach ($id in $r.Pids) {
-                if (Get-Process -Id $id -ErrorAction SilentlyContinue) {
-                    & taskkill.exe /PID $id /T /F 2>&1 | Out-Null
+            # O EnginePID de tarefa COM e o taskhostw/svchost, que hospeda outras
+            # tarefas e servicos: esse nunca leva taskkill /T, so o Stop abaixo.
+            $alvos = @(foreach ($id in $r.Pids) {
+                $proc = Get-Process -Id $id -ErrorAction SilentlyContinue
+                if (-not $proc) { continue }
+                if (@('taskhostw', 'taskhost', 'taskeng', 'svchost') -contains $proc.ProcessName) {
+                    Escrever "   PID $id e o $($proc.ProcessName) (hospeda outras tarefas): nao encerro."
+                    continue
                 }
-            }
+                $id
+            })
+            foreach ($id in $alvos) { & taskkill.exe /PID $id /T /F 2>&1 | Out-Null }
             $cod = "`$s = New-Object -ComObject Schedule.Service; `$s.Connect()`n" +
                    "`$s.GetFolder('\').GetTask($(Lit $r.Caminho)).Stop(0); 'ok'"
             [void](ComLimite $cod 60)
             Start-Sleep -Seconds 3
-            $vivos = @($r.Pids | Where-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue })
+            $vivos = @($alvos | Where-Object { Get-Process -Id $_ -ErrorAction SilentlyContinue })
             if ($vivos.Count -eq 0) { Escrever '   [OK] Rodada presa encerrada.' }
             else { $falhas++; Escrever "   [!] Continua vivo: PID $($vivos -join ', ')." }
         }
