@@ -46,6 +46,7 @@ param(
     [ValidateSet('noscale', 'fit', 'shrink')]
     [string]$AjustePdf = 'noscale',
     [int]   $Intervalo = 3,
+    [int]   $PrazoImpressao = 120,
     [switch]$UmaVez,
     [switch]$Simular,
     [switch]$Instalar,
@@ -115,15 +116,17 @@ if ($Instalar) {
 }
 
 # --------------------------------------------------------------- pre-requisitos
-if (-not (Get-Command Get-Printer -ErrorAction SilentlyContinue)) {
-    Registrar '[ERRO] Get-Printer indisponivel - este agente depende do modulo PrintManagement.'
-    exit 1
-}
-$impressora = Get-Printer -Name $Fila -ErrorAction SilentlyContinue
+# A fila e lida direto do spooler (System.Printing), nao pelo Get-Printer: o
+# Get-Printer passa pelo WMI e, com o WMI travado, o agente nunca subia.
+Add-Type -AssemblyName System.Printing
+$servidorImpressao = New-Object System.Printing.LocalPrintServer
+$impressora = $null
+try { $impressora = $servidorImpressao.GetPrintQueue($Fila) } catch { }
 if (-not $impressora) {
     Registrar "[ERRO] Nao existe impressora '$Fila'. Filas BIXOLON nesta maquina:"
-    Get-Printer | Where-Object { $_.Name -match 'BIXOLON|Etiqueta|Codigo' -or $_.DriverName -match 'BIXOLON|BPL' } |
-        ForEach-Object { Registrar "         $($_.Name)  (porta $($_.PortName))" }
+    $servidorImpressao.GetPrintQueues() |
+        Where-Object { $_.Name -match 'BIXOLON|Etiqueta|Codigo' -or $_.QueueDriver.Name -match 'BIXOLON|BPL' } |
+        ForEach-Object { Registrar "         $($_.Name)  (porta $($_.QueuePort.Name))" }
     Registrar '       Use -Fila com o nome certo, ou rode 7-nomear-impressoras.ps1.'
     exit 1
 }
@@ -205,7 +208,14 @@ function ImprimirPdf([string]$Arquivo) {
         throw 'SumatraPDF nao encontrado - instale ou ponha o SumatraPDF.exe ao lado deste script'
     }
     $argsSumatra = @('-print-to', "`"$Fila`"", '-print-settings', $AjustePdf, '-silent', '-exit-when-done', "`"$Arquivo`"")
-    $p = Start-Process -FilePath $Sumatra -ArgumentList $argsSumatra -Wait -PassThru -WindowStyle Hidden
+    # Com prazo: se o spooler trava, o SumatraPDF espera para sempre e, sem
+    # prazo, o agente parava junto e nenhuma etiqueta saia mais, sem erro.
+    $p = Start-Process -FilePath $Sumatra -ArgumentList $argsSumatra -PassThru -WindowStyle Hidden
+    $null = $p.Handle   # guarda o handle: sem isso o ExitCode volta vazio no 5.1
+    if (-not $p.WaitForExit($PrazoImpressao * 1000)) {
+        try { $p.Kill() } catch { }
+        throw "SumatraPDF nao terminou em $PrazoImpressao s (spooler travado? rode etiqueta-fiscal.ps1)"
+    }
     if ($p.ExitCode -ne 0) { throw "SumatraPDF saiu com codigo $($p.ExitCode)" }
 }
 
@@ -281,9 +291,9 @@ if (-not $mutex.WaitOne(0)) {
 }
 try {
     $pdf = if ($Sumatra) { $Sumatra } else { 'NAO ENCONTRADO - PDF vai para Erro\' }
-    Registrar "[..] Agente de notas fiscais: $entrada -> '$Fila' (porta $($impressora.PortName)). SumatraPDF: $pdf"
-    if ($impressora.PrinterStatus -and "$($impressora.PrinterStatus)" -notin @('Normal', '0')) {
-        Registrar "[!] A fila '$Fila' esta com status $($impressora.PrinterStatus)."
+    Registrar "[..] Agente de notas fiscais: $entrada -> '$Fila' (porta $($impressora.QueuePort.Name)). SumatraPDF: $pdf"
+    if ("$($impressora.QueueStatus)" -ne 'None') {
+        Registrar "[!] A fila '$Fila' esta com status $($impressora.QueueStatus)."
     }
     if ($UmaVez) {
         # Da tempo de um download recem-terminado ficar "pronto".

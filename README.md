@@ -103,6 +103,7 @@ servidor. Protocolos suportados: SSH (sshfs), NFS e SMB.
 | `scripts/windows/argos-notas-fiscais.ps1` | Windows (estoque) | Agente Argos que imprime na `Etiqueta Fiscal` os PDFs/ZPL de etiqueta e DANFE baixados do UpSeller (`-Instalar` cria a tarefa) |
 | `scripts/windows/verificar-agentes.ps1` | Windows (servidor) | Confere as rotinas agendadas e religa as essenciais desligadas (lista em `rotinas-essenciais.txt`); é o que o `/verificar-agentes` roda |
 | `scripts/windows/vigias-loja.ps1` | Windows (loja) | Diagnostica os vigias do Argos (UpSeller, Ações, TikTok) sem depender do WMI e, com `-Reparar`, destrava a rodada presa, o spooler e põe limite de tempo nas tarefas; é o que o `/vigias-loja` roda |
+| `scripts/windows/etiqueta-fiscal.ps1` | Windows (loja) | Diagnostica a `Etiqueta Fiscal` sem depender do WMI (spooler, porta USB viva, fila, trabalhos parados, agente de notas fiscais) e, com `-Reparar`, reinicia o spooler, religa a fila na porta certa quando não há dúvida e sobe o agente; é o que o `/etiqueta-fiscal` roda |
 | `scripts/windows/cerebro-no-github.ps1` | Windows (servidor) | Agente que envia o Cérebro ao GitHub a cada 30 min, com travas contra segredo e envio em massa (`-Instalar` cria a tarefa) |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada) —
@@ -144,6 +145,7 @@ já mostra o plano por padrão — aplica só com `-Confirmar`, igual ao
 - [Argos imprime as notas fiscais no lugar do UpSeller](docs/18-argos-imprime-notas-fiscais.md)
 - [Vigia do UpSeller (especificação)](docs/19-vigia-upseller.md)
 - [Manutenção dos vigias da loja (`/vigias-loja`) e pendências](docs/20-manutencao-vigias.md)
+- [Etiqueta Fiscal parada ou guardião sem ler as impressoras (`/etiqueta-fiscal`)](docs/21-etiqueta-fiscal.md)
 
 [Checklist de campo](docs/checklist.md)
 
