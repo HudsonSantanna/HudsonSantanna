@@ -146,6 +146,7 @@ já mostra o plano por padrão — aplica só com `-Confirmar`, igual ao
 - [Vigia do UpSeller (especificação)](docs/19-vigia-upseller.md)
 - [Manutenção dos vigias da loja (`/vigias-loja`) e pendências](docs/20-manutencao-vigias.md)
 - [Etiqueta Fiscal parada ou guardião sem ler as impressoras (`/etiqueta-fiscal`)](docs/21-etiqueta-fiscal.md)
+- [Convites a afiliados do TikTok Shop sem amostra (`/convites-tiktok`)](docs/22-convites-afiliados-tiktok.md)
 
 [Checklist de campo](docs/checklist.md)
 
