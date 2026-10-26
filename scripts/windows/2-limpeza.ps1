@@ -17,7 +17,7 @@ param(
     [switch]$DesativarHibernacao,
     [switch]$LimparComponentes,
     [switch]$EsvaziarLixeira,
-    [string]$Log = "$env:USERPROFILE\Desktop\limpeza-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Log = "$([Environment]::GetFolderPath('Desktop'))\limpeza-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
@@ -128,7 +128,8 @@ if ($EsvaziarLixeira) {
 
 # --------------------------------------------------------- hibernacao
 if ($DesativarHibernacao) {
-    $hiber = Get-Item -LiteralPath "$unidade\hiberfil.sys" -Force
+    # Get-Item falha no hiberfil.sys (em uso pelo Windows); listar a raiz funciona.
+    $hiber = Get-ChildItem -LiteralPath "$unidade\" -Force -Filter 'hiberfil.sys'
     $tamHiber = if ($hiber) { $hiber.Length } else { 0 }
     if (-not (EhAdmin)) {
         Escrever 'Hibernacao: precisa de administrador. Pulado.'
@@ -175,6 +176,12 @@ if ($Executar) {
     Escrever '  .\2-limpeza.ps1 -Executar -EsvaziarLixeira -DesativarHibernacao'
 }
 
-$script:Linhas | Out-File -FilePath $Log -Encoding UTF8
+try {
+    $script:Linhas | Out-File -FilePath $Log -Encoding UTF8 -ErrorAction Stop
+} catch {
+    # Area de Trabalho inacessivel: grava ao lado do script
+    $Log = Join-Path $PSScriptRoot (Split-Path $Log -Leaf)
+    $script:Linhas | Out-File -FilePath $Log -Encoding UTF8
+}
 Write-Host ''
 Write-Host "Log salvo em: $Log" -ForegroundColor Green
