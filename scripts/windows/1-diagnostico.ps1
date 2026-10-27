@@ -218,6 +218,7 @@ Get-CimInstance Win32_StartupCommand | ForEach-Object {
 }
 Escrever ''
 Escrever 'Para desativar o que nao usa: Ctrl+Shift+Esc -> aba Aplicativos de Inicializacao.'
+Escrever 'Navegadores abrindo sozinhos ou varias janelas de uma vez? Rode 4-navegadores.ps1.'
 
 # -------------------------------------------------------------- resumo
 Titulo 'RESUMO'

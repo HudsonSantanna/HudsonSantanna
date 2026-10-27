@@ -83,6 +83,50 @@ Ele pede que você digite `APAGAR` para confirmar.
 > Troque `E:` pela letra do seu HD externo, e o caminho de origem pelo que
 > aparecer no relatório.
 
+## Passo 4 — Navegadores abrindo sozinhos (ou vários de uma vez)
+
+Primeiro o diagnóstico — **não muda nada**:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\4-navegadores.ps1
+```
+
+Ele procura tudo que consegue disparar um navegador sem você pedir:
+
+| Onde procura | O que costuma ser |
+|---|---|
+| "Reiniciar meus aplicativos ao entrar" do Windows | Todo navegador aberto no desligamento volta sozinho |
+| Inicialização (registro e pasta Inicializar) | Programa ou adware abrindo navegador/site no login |
+| Tarefas agendadas | Adware que abre propaganda de tempos em tempos |
+| Políticas forçadas (Chrome, Edge, Brave, Firefox) | Adware fixando páginas e extensões |
+| Atalhos com site embutido | Atalho do navegador adulterado |
+| Gatilhos WMI | Persistência avançada (só relata) |
+
+Encontrou algo? Corrija:
+
+```powershell
+.\4-navegadores.ps1 -Executar
+```
+
+| Parâmetro | O que faz |
+|---|---|
+| `-Executar` | Desativa o que foi encontrado (inicialização, tarefas, atalhos, opção do Windows) |
+| `-RemoverPoliticas` | Junto com `-Executar`, remove as políticas forçadas nos navegadores |
+| `-VerificarVirus` | Atualiza e roda a verificação rápida do Windows Defender |
+
+Nada é apagado: itens de inicialização são **desativados** (dá para religar
+pelo Gerenciador de Tarefas), tarefas agendadas são **desabilitadas** e tudo o
+que mudar ganha backup na pasta `backup-navegadores-...` da Área de Trabalho.
+Reinicie o PC depois para confirmar.
+
+Se o script não achar nada e as janelas continuam se multiplicando:
+
+- No navegador, **Configurações → Ao iniciar**: troque "Continuar de onde
+  parou" por "Abrir a página Nova guia"
+- Remova extensões que você não reconhece
+- PC lento: cada clique a mais no ícone, enquanto o navegador demora, abre
+  outra janela. Os passos 1 e 2 deixam a máquina responder mais rápido
+
 ## Se der "não é possível carregar o arquivo... não está assinado digitalmente"
 
 É a política de execução do PowerShell. O `-ExecutionPolicy Bypass` nos comandos
