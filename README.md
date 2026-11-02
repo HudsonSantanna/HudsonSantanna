@@ -69,6 +69,7 @@ Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nad
 5. [Preparar o pendrive pelo Windows](docs/05-preparar-pelo-windows.md)
 6. [Manutenção da máquina no Windows](docs/06-manutencao-windows.md)
 7. [Checklist de campo](docs/checklist.md)
+8. [Plano Queimão até 15/12/2026](docs/queimao.md)
 
 ## Requisitos
 
