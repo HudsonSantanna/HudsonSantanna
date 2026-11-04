@@ -45,6 +45,7 @@ param(
     [switch]$Executar,
     [switch]$ConferirHash,
     [switch]$ApagarPastasVazias,
+    [switch]$SemConfirmacao,
     [string]$Log
 )
 
@@ -272,10 +273,14 @@ if (-not $Executar) {
 Escrever ''
 Escrever ('ATENCAO: {0} arquivos serao APAGADOS da origem ({1}).' -f $script:Batem, (ComoGB $script:Bytes)) 'Yellow'
 Escrever 'Uma copia conferida de cada um fica no backup.' 'Yellow'
-$resp = Read-Host 'Digite APAGAR para confirmar (qualquer outra coisa cancela)'
-if ($resp -ne 'APAGAR') {
-    Escrever 'Cancelado.' 'Red'
-    GravarLog; exit 1
+if ($SemConfirmacao) {
+    Escrever '-SemConfirmacao: seguindo sem perguntar.' 'Yellow'
+} else {
+    $resp = Read-Host 'Digite APAGAR para confirmar (qualquer outra coisa cancela)'
+    if ($resp -ne 'APAGAR') {
+        Escrever 'Cancelado.' 'Red'
+        GravarLog; exit 1
+    }
 }
 
 # -------------------------------------------------- 5. apaga

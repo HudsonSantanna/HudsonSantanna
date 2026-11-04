@@ -162,6 +162,7 @@ Opções:
 | `-Executar` | Sem isso, só simula |
 | `-ConferirHash` | Confere SHA-256 além do tamanho (mais lento) |
 | `-ApagarPastasVazias` | Remove pastas que ficaram vazias depois do delete |
+| `-SemConfirmacao` | Pula o prompt `Digite APAGAR`. Use só em rodada automática (deixar rodando e sair), nunca na primeira vez |
 
 > **Chamando por `powershell -File`:** troque `-Pares @{ ... }` por
 > `-ParesJson '{"...":"..."}'`. O `-File` entrega cada argumento como texto,
