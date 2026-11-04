@@ -29,11 +29,19 @@
     Se voce nao passar, o script tenta adivinhar pelos nomes conhecidos (Area de
     Trabalho, Documentos, Imagens, Videos, Musicas, Favoritos, Downloads) usando
     [Environment]::GetFolderPath - que respeita redirecionamento (OneDrive, D:).
+
+    Chamando via `powershell -File`, use -ParesJson (string JSON) em vez de
+    -Pares, porque `powershell -File` recebe argumentos como texto e nao aceita
+    hashtable literal:
+      powershell -ExecutionPolicy Bypass -File .\5-limpar-apos-backup.ps1 `
+          -Backup "E:\Backup-PC-20261104" `
+          -ParesJson '{\"Documentos\":\"C:\\Users\\hudso\\Documents\"}'
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)][string]$Backup,
     [hashtable]$Pares,
+    [string]$ParesJson,
     [switch]$Executar,
     [switch]$ConferirHash,
     [switch]$ApagarPastasVazias,
@@ -41,6 +49,21 @@ param(
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
+
+# -ParesJson funciona com `powershell -File`, que converte argumentos em
+# string (uma hashtable literal `@{...}` chega como texto e e recusada).
+if ($ParesJson) {
+    try {
+        $tmp = @{}
+        (ConvertFrom-Json $ParesJson -ErrorAction Stop).PSObject.Properties |
+            ForEach-Object { $tmp[$_.Name] = [string]$_.Value }
+        if (-not $Pares) { $Pares = @{} }
+        foreach ($k in $tmp.Keys) { $Pares[$k] = $tmp[$k] }
+    } catch {
+        Write-Host ("ParesJson invalido: {0}" -f $_.Exception.Message) -ForegroundColor Red
+        exit 1
+    }
+}
 $script:Linhas  = New-Object System.Collections.ArrayList
 $script:Batem   = 0
 $script:Bytes   = [int64]0

@@ -158,9 +158,15 @@ Opções:
 |---|---|
 | `-Backup "..."` | Pasta de backup (obrigatório), normalmente em `E:\` |
 | `-Pares @{ ... }` | Mapa `pasta-no-backup = pasta-na-máquina`. Sem ele, só usa as pastas conhecidas |
+| `-ParesJson '{"...":"..."}'` | Mesmo que `-Pares`, mas como string JSON (use com `powershell -File`, que não aceita hashtable literal) |
 | `-Executar` | Sem isso, só simula |
 | `-ConferirHash` | Confere SHA-256 além do tamanho (mais lento) |
 | `-ApagarPastasVazias` | Remove pastas que ficaram vazias depois do delete |
+
+> **Chamando por `powershell -File`:** troque `-Pares @{ ... }` por
+> `-ParesJson '{"...":"..."}'`. O `-File` entrega cada argumento como texto,
+> então uma hashtable literal `@{...}` é recusada. No terminal admin aberto
+> aqui dentro, `-Pares @{ ... }` funciona normal.
 
 ## Rodando direto de um compartilhamento de rede
 
