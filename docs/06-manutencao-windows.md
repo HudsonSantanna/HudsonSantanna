@@ -83,6 +83,51 @@ Ele pede que você digite `APAGAR` para confirmar.
 > Troque `E:` pela letra do seu HD externo, e o caminho de origem pelo que
 > aparecer no relatório.
 
+## Passo 4 — Conferir o backup no HD (unidade E:)
+
+Depois de mover arquivos, confira o que está na unidade de backup. **Só lê,
+não altera nada:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\4-conferir-backup.ps1
+```
+
+Relatório na Área de Trabalho mostrando:
+
+- espaço total, usado e livre da unidade (padrão `E:`)
+- cada pasta de primeiro nível com tamanho, quantidade de arquivos e **data da
+  última alteração**
+- marca com `!!` pastas paradas há mais de 30 dias (backup possivelmente
+  esquecido)
+
+Opções:
+
+| Parâmetro | O que faz |
+|---|---|
+| `-Unidade F:` | Mira outra letra de unidade |
+| `-Profundidade 2` | Lista também as subpastas |
+| `-DiasParado 60` | Muda o limite de "parado" (padrão 30) |
+| `-Origem "..." -Destino "..."` | Compara tamanho e nº de arquivos entre origem e destino |
+
+Exemplo — conferir se o backup bate com a pasta original:
+
+```powershell
+.\4-conferir-backup.ps1 -Origem "C:\Users\hudso\Documentos" -Destino "E:\Backup\Documentos"
+```
+
+## Rodando direto de um compartilhamento de rede
+
+Se os `.ps1` ficam num share (ex.: `\\192.168.15.5\ArgosArquivo\`), autentique
+**antes** de chamar o script, senão o PowerShell retorna *"o argumento não
+existe"*:
+
+```powershell
+net use \\192.168.15.5\ArgosArquivo /user:KHAOSOMNI\hudso *
+powershell -ExecutionPolicy Bypass -File "\\192.168.15.5\ArgosArquivo\2-limpeza.ps1" -Executar
+```
+
+(Abrir a pasta uma vez no Explorer também guarda a credencial da sessão.)
+
 ## Se der "não é possível carregar o arquivo... não está assinado digitalmente"
 
 É a política de execução do PowerShell. O `-ExecutionPolicy Bypass` nos comandos
