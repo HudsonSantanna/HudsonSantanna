@@ -57,6 +57,8 @@ sudo /home/partimag/scripts/restaurar-maquina.sh       # grava em outra máquina
 | `scripts/windows/1-diagnostico.ps1`   | Windows     | Relatório de espaço, saúde dos discos, maiores pastas e arquivos |
 | `scripts/windows/2-limpeza.ps1`       | Windows     | Libera caches e temporários (simula por padrão) |
 | `scripts/windows/3-mover-para-hd.ps1` | Windows     | Copia para HD externo, confere e só então apaga a origem |
+| `scripts/windows/4-conferir-backup.ps1` | Windows   | Relatório read-only da unidade de backup (padrão `E:`) |
+| `scripts/windows/5-limpar-apos-backup.ps1` | Windows | Apaga da origem só o que já está provado no backup do `E:` |
 
 Todos aceitam `--ajuda` e `--simular` (mostra o que seria feito sem escrever nada).
 

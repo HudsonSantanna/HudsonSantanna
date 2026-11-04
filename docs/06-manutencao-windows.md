@@ -1,4 +1,4 @@
-# Manutenção da máquina — 3 passos
+# Manutenção da máquina — 5 passos
 
 Scripts para PowerShell no Windows. **Nada é apagado sem você mandar.**
 
@@ -114,6 +114,53 @@ Exemplo — conferir se o backup bate com a pasta original:
 ```powershell
 .\4-conferir-backup.ps1 -Origem "C:\Users\hudso\Documentos" -Destino "E:\Backup\Documentos"
 ```
+
+## Passo 5 — Limpar a origem depois do backup conferido
+
+Só rode **depois** de conferir o backup no passo 4. O script apaga da máquina
+apenas os arquivos que **comprovadamente** já estão na cópia do `E:` (mesmo
+caminho relativo, mesmo tamanho; com `-ConferirHash` também o mesmo SHA-256).
+Arquivo sem par confirmado, com tamanho diferente ou em uso **não é apagado**.
+
+Primeiro simule, apontando cada pasta do backup para a pasta original:
+
+```powershell
+.\5-limpar-apos-backup.ps1 -Backup "E:\Backup-PC-20261104" `
+    -Pares @{
+        'Documentos' = "$HOME\Documentos"
+        'Imagens'    = "$HOME\Imagens"
+        'Videos'     = "$HOME\Videos"
+    }
+```
+
+Se omitir `-Pares`, o script tenta adivinhar pelos nomes conhecidos (Área de
+Trabalho, Documentos, Imagens, Vídeos, Músicas, Favoritos, Downloads) usando
+`[Environment]::GetFolderPath`, que respeita redirecionamento para OneDrive ou
+outro disco.
+
+Gostou da simulação? Rode de novo com `-Executar` (pede `APAGAR` para confirmar):
+
+```powershell
+.\5-limpar-apos-backup.ps1 -Backup "E:\Backup-PC-20261104" `
+    -Pares @{ 'Documentos' = "$HOME\Documentos" } -Executar
+```
+
+Extra seguro — confere SHA-256 antes de cada delete (mais lento, lê byte a byte):
+
+```powershell
+.\5-limpar-apos-backup.ps1 -Backup "E:\Backup-PC-20261104" `
+    -Pares @{ 'Documentos' = "$HOME\Documentos" } -Executar -ConferirHash
+```
+
+Opções:
+
+| Parâmetro | O que faz |
+|---|---|
+| `-Backup "..."` | Pasta de backup (obrigatório), normalmente em `E:\` |
+| `-Pares @{ ... }` | Mapa `pasta-no-backup = pasta-na-máquina`. Sem ele, só usa as pastas conhecidas |
+| `-Executar` | Sem isso, só simula |
+| `-ConferirHash` | Confere SHA-256 além do tamanho (mais lento) |
+| `-ApagarPastasVazias` | Remove pastas que ficaram vazias depois do delete |
 
 ## Rodando direto de um compartilhamento de rede
 
