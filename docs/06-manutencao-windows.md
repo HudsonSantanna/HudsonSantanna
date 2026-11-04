@@ -164,6 +164,15 @@ Opções:
 | `-ApagarPastasVazias` | Remove pastas que ficaram vazias depois do delete |
 | `-SemConfirmacao` | Pula o prompt `Digite APAGAR`. Use só em rodada automática (deixar rodando e sair), nunca na primeira vez |
 
+> **OneDrive e "Files On-Demand":** no OneDrive ligado a conta Microsoft, a
+> maioria dos arquivos vira *reparse point* (placeholder que só baixa quando
+> você abre). O script **pula reparse points por segurança** (apagar um deles
+> pode confundir o sync e marcar o arquivo como deletado na nuvem). Então
+> incluir `Usuario\OneDrive` no `-Pares` tende a liberar pouco espaço — e isso
+> é o correto, porque os placeholders já não ocupam espaço mesmo. Pra realmente
+> ganhar espaço com OneDrive, use a opção *"Liberar espaço"* do próprio cliente
+> OneDrive, clicando com o botão direito na pasta.
+
 > **Chamando por `powershell -File`:** troque `-Pares @{ ... }` por
 > `-ParesJson '{"...":"..."}'`. O `-File` entrega cada argumento como texto,
 > então uma hashtable literal `@{...}` é recusada. No terminal admin aberto
