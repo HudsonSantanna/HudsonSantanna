@@ -22,7 +22,7 @@ param(
     [int]$DiasParado = 30,
     [string]$Origem,
     [string]$Destino,
-    [string]$Log = "$env:USERPROFILE\Desktop\conferir-backup-$(Get-Date -Format 'yyyyMMdd-HHmm').txt"
+    [string]$Log = (Join-Path ([Environment]::GetFolderPath('Desktop')) "conferir-backup-$(Get-Date -Format 'yyyyMMdd-HHmm').txt")
 )
 
 $ErrorActionPreference = 'SilentlyContinue'
