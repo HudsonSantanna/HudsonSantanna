@@ -41,7 +41,17 @@ $destinoFinal = Join-Path $Destino $nomePasta
 
 $tamOrigem = TamanhoPasta $Origem
 $qtdOrigem = @(Get-ChildItem -LiteralPath $Origem -Recurse -File -Force -ErrorAction SilentlyContinue).Count
-$livreDestino = (Get-Volume -DriveLetter $raizDestino.TrimEnd(':')).SizeRemaining
+
+# Get-Volume so funciona com disco local; Win32_LogicalDisk cobre tambem unidade
+# de rede mapeada (net use E: \\servidor\share), que e o caso de destino comum.
+$disco = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='$raizDestino'" -ErrorAction SilentlyContinue
+if ($disco -and $disco.FreeSpace) {
+    $livreDestino = [int64]$disco.FreeSpace
+} else {
+    # unidade de rede pode nao reportar espaco livre; segue sem travar
+    $livreDestino = [int64]::MaxValue
+    Write-Host "Aviso: nao consegui ler o espaco livre em $raizDestino (unidade de rede?). Seguindo sem checar." -ForegroundColor Yellow
+}
 
 Write-Host ''
 Write-Host "Origem ........: $Origem"
