@@ -99,7 +99,48 @@ configuração.
 > rodada que trava é encerrada pelo próprio Windows antes da próxima, e o vigia
 > perde **uma** rodada em vez de um dia inteiro.
 
-## Pendências (atualizado em 15/10/2026, fim da tarde)
+## O caso de 05/11: a loja não grava na pasta de rede
+
+Em 06/11/2026 o guardião abriu este aviso na `HUDSONINTEGRAR`:
+
+> LEMBRETE - A loja NAO consegue gravar na pasta de rede
+> `\\KHAOSOMNI\AllinPass`: tiktok-cao-de-guarda ha 2389 min (a pasta de rede
+> travou: mais de 15 s sem responder). As rotinas seguem rodando (gravam local)
+> e o Guardião espelha por SSH. Desde 05/11 06:33.
+
+**Causa:** pelo IP a KHAOSOMNI respondia, mas o acesso pelo **nome**
+`KHAOSOMNI` travava. O IP dela tinha mudado (o doc 13 ainda dizia
+192.168.15.138; em 05/11 ela estava em **192.168.15.5**), e a resolução do nome
+na rede passava dos 15 s.
+
+**Correção aplicada em 06/11, 11:17**: o nome foi fixado no `hosts` da loja,
+num PowerShell **como Administrador** na `HUDSONINTEGRAR`:
+
+```powershell
+$ip = '192.168.15.5'      # confirmar antes com ipconfig na KHAOSOMNI
+Test-NetConnection $ip -Port 445          # tem de dar TcpTestSucceeded : True
+$h = "$env:SystemRoot\System32\drivers\etc\hosts"
+(Get-Content $h) | Where-Object { $_ -notmatch '\sKHAOSOMNI(\s|$)' } | Set-Content $h -Encoding ASCII
+Add-Content $h "$ip`tKHAOSOMNI" -Encoding ASCII
+ipconfig /flushdns
+nbtstat -R
+```
+
+Conferido gravando e apagando um arquivo de teste:
+
+```powershell
+"teste $(Get-Date)" | Out-File \\KHAOSOMNI\AllinPass\_teste-loja.txt; Get-Item \\KHAOSOMNI\AllinPass\_teste-loja.txt
+Remove-Item \\KHAOSOMNI\AllinPass\_teste-loja.txt
+```
+
+O arquivo apareceu na hora: a loja voltou a gravar na pasta.
+
+**Se voltar:** a linha do `hosts` aponta para um IP fixo. Se o IP da KHAOSOMNI
+mudar de novo, o acesso trava igual. Confira o `ipconfig` na KHAOSOMNI, troque
+o `$ip` e rode o bloco acima de novo. A correção definitiva é a **reserva de
+DHCP** no roteador (pendência 6).
+
+## Pendências (atualizado em 15/10/2026, fim da tarde; itens 6 e 7 em 06/11)
 
 ### Vigias, nesta máquina
 
@@ -110,6 +151,8 @@ configuração.
 | 3 | WMI sem resposta (se o diagnóstico confirmar) | pessoa | Reiniciar a máquina **fora** do horário de expedição e rodar `/vigias-loja` de novo |
 | 4 | SMTP: os avisos só aparecem na tela desta máquina | Hudson | Decidir qual conta envia e gravar `SMTP_HOST/USER/PASS` no cofre do Argos. Nunca no Git |
 | 5 | Histórico do Agendador desligado (se o relatório disser) | Claude da máquina | Agendador › *Habilitar histórico de todas as tarefas*: deixa o evento 322 visível no próximo diagnóstico |
+| 6 | IP da KHAOSOMNI pode mudar e travar a pasta de rede de novo (caso de 05/11) | Hudson | No roteador, reservar o **192.168.15.5** para a KHAOSOMNI (reserva de DHCP pelo MAC). Se o IP reservado for outro, atualizar o `hosts` da loja |
+| 7 | Pasta de rede `\\KHAOSOMNI\AllinPass` | — | **Resolvida em 06/11, 11:17** (`hosts` na loja). Clicar *OK* no aviso; se ele voltar, ver o caso de 05/11 |
 
 ### No código dos vigias (Claude da máquina)
 
