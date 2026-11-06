@@ -195,5 +195,7 @@ Faça nesta ordem:
 
 Se a máquina ainda não tiver o cérebro em rede, primeiro o passo de cliente:
 `2-INSTALAR-CLIENTE.cmd` do `CEREBRO-REDE-5-MAQUINAS`, respondendo
-**`KHAOSOMNI`** (192.168.15.138) quando perguntar o nome do servidor — foi
-digitar outro nome que colocou um notebook no servidor errado em 24/08.
+**`KHAOSOMNI`** quando perguntar o nome do servidor — foi digitar outro nome
+que colocou um notebook no servidor errado em 24/08. O IP da KHAOSOMNI era
+192.168.15.138 e em 05/11/2026 estava em **192.168.15.5**: confirme com
+`ipconfig` na própria KHAOSOMNI antes de usar o IP (doc 20, caso de 05/11).
