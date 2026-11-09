@@ -1,0 +1,21 @@
+name: shellcheck
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar shellcheck
+        run: sudo apt-get update -qq && sudo apt-get install -y shellcheck
+
+      - name: Analisar scripts
+        run: shellcheck -S info -x -P scripts scripts/*.sh scripts/lib/*.sh
+
+      - name: Conferir sintaxe
+        run: for f in scripts/*.sh scripts/lib/*.sh; do bash -n "$f"; done
