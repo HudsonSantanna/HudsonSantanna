@@ -34,11 +34,27 @@ function EhAdmin {
     (New-Object Security.Principal.WindowsPrincipal $id).IsInRole(
         [Security.Principal.WindowsBuiltInRole]::Administrator)
 }
+# Soma o tamanho direto pelo .NET (bem mais rapido que Get-ChildItem -Recurse).
+# Nao entra em junctions/links simbolicos; pastas sem permissao sao puladas.
 function TamanhoPasta([string]$Caminho) {
-    if (-not (Test-Path -LiteralPath $Caminho)) { return [int64]0 }
-    $s = (Get-ChildItem -LiteralPath $Caminho -Recurse -File -Force |
-            Measure-Object -Property Length -Sum).Sum
-    if ($null -eq $s) { [int64]0 } else { [int64]$s }
+    $raiz = New-Object System.IO.DirectoryInfo $Caminho
+    if (-not $raiz.Exists) { return [int64]0 }
+    $reparse = [System.IO.FileAttributes]::ReparsePoint
+    $total   = [int64]0
+    $pilha   = New-Object System.Collections.Stack
+    $pilha.Push($raiz)
+    while ($pilha.Count -gt 0) {
+        $dir = $pilha.Pop()
+        try { $entradas = $dir.GetFileSystemInfos() } catch { continue }
+        foreach ($e in $entradas) {
+            if ($e -is [System.IO.DirectoryInfo]) {
+                if (($e.Attributes -band $reparse) -eq 0) { $pilha.Push($e) }
+            } else {
+                $total += $e.Length
+            }
+        }
+    }
+    $total
 }
 
 function LimparPasta([string]$Nome, [string]$Caminho) {

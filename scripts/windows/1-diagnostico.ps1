@@ -40,6 +40,80 @@ function EhAdmin {
         [Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+# Varre uma pasta direto pelo .NET, sem o pipeline do Get-ChildItem (que cria
+# um objeto PowerShell por arquivo e e varias vezes mais lento). Nao entra em
+# junctions/links simbolicos: evita laco infinito e contar a mesma pasta duas
+# vezes. Pastas sem permissao sao puladas e contadas em PastasNegadas.
+function Medir {
+    param(
+        [string]$Caminho,
+        [int64] $LimiteGrande = -1,   # >= 0: guarda arquivos deste tamanho para cima
+        [switch]$PorTopo,             # soma por pasta de primeiro nivel
+        [int64] $AvisoACada   = 0     # imprime progresso a cada N arquivos
+    )
+    $raiz = New-Object System.IO.DirectoryInfo $Caminho
+    if (-not $raiz.Exists) { return $null }
+
+    $reparse  = [System.IO.FileAttributes]::ReparsePoint
+    $bytes    = [int64]0
+    $arquivos = [int64]0
+    $negadas  = 0
+    $porTopo  = @{}
+    $grandes  = New-Object System.Collections.ArrayList
+    $proximo  = $AvisoACada
+    $pilha    = New-Object System.Collections.Stack
+    $pilha.Push(@($raiz, ''))
+
+    while ($pilha.Count -gt 0) {
+        $par  = $pilha.Pop()
+        $dir  = $par[0]
+        $topo = $par[1]
+        try { $entradas = $dir.GetFileSystemInfos() } catch { $negadas++; continue }
+
+        $soma = [int64]0
+        foreach ($e in $entradas) {
+            if ($e -is [System.IO.DirectoryInfo]) {
+                if (($e.Attributes -band $reparse) -eq 0) {
+                    $t = if ($topo) { $topo } else { $e.Name }
+                    $pilha.Push(@($e, $t))
+                }
+                continue
+            }
+            $tam = $e.Length
+            $soma += $tam
+            $arquivos++
+            if ($LimiteGrande -ge 0 -and $tam -ge $LimiteGrande) {
+                [void]$grandes.Add([pscustomobject]@{
+                    Tamanho    = $tam
+                    Modificado = $e.LastWriteTime
+                    Caminho    = $e.FullName
+                })
+            }
+            # arquivos soltos na raiz (pagefile.sys, hiberfil.sys) entram pelo nome
+            if ($PorTopo -and -not $topo) { $porTopo[$e.Name] = $tam }
+        }
+        $bytes += $soma
+        if ($PorTopo -and $topo) { $porTopo[$topo] += $soma }
+
+        if ($AvisoACada -gt 0 -and $arquivos -ge $proximo) {
+            Write-Host "  ... $arquivos arquivos lidos"
+            $proximo += $AvisoACada
+        }
+    }
+
+    [pscustomobject]@{
+        Bytes         = $bytes
+        Arquivos      = $arquivos
+        PastasNegadas = $negadas
+        PorTopo       = $porTopo
+        Grandes       = $grandes
+    }
+}
+function TamanhoPasta([string]$Caminho) {
+    $m = Medir $Caminho
+    if ($m) { $m.Bytes } else { $null }
+}
+
 Escrever "Diagnostico da maquina - $(Get-Date -Format 'dd/MM/yyyy HH:mm')"
 Escrever "Computador: $env:COMPUTERNAME   Usuario: $env:USERNAME"
 if (-not (EhAdmin)) {
@@ -94,11 +168,6 @@ if ($discos) {
 
 # --------------------------------------------------- espaco recuperavel
 Titulo 'ESPACO RECUPERAVEL (candidatos a limpeza)'
-function TamanhoPasta([string]$Caminho) {
-    if (-not (Test-Path -LiteralPath $Caminho)) { return $null }
-    (Get-ChildItem -LiteralPath $Caminho -Recurse -File -Force |
-        Measure-Object -Property Length -Sum).Sum
-}
 $candidatos = [ordered]@{
     'Lixeira'                  = "$Unidade\`$Recycle.Bin"
     'Temp do usuario'          = $env:TEMP
@@ -134,33 +203,16 @@ if ($pontos) {
 
 # ------------------------------------------------- varredura do disco
 Titulo "MAIORES PASTAS E ARQUIVOS EM $Unidade"
-Escrever 'Varrendo o disco... isso leva de 2 a 10 minutos. Aguarde.'
-$inicio = Get-Date
-$porPasta  = @{}
-$grandes   = New-Object System.Collections.ArrayList
-$prefixo   = "$Unidade\"
-$limite    = $MinimoMB * 1MB
-$contador  = 0
-
-Get-ChildItem -LiteralPath $prefixo -Recurse -File -Force | ForEach-Object {
-    $contador++
-    if (($contador % 20000) -eq 0) { Write-Host "  ... $contador arquivos lidos" }
-
-    $resto = $_.FullName.Substring($prefixo.Length)
-    $topo  = ($resto -split '\\')[0]
-    if ($porPasta.ContainsKey($topo)) { $porPasta[$topo] += $_.Length }
-    else { $porPasta[$topo] = [int64]$_.Length }
-
-    if ($_.Length -ge $limite) {
-        [void]$grandes.Add([pscustomobject]@{
-            Tamanho   = $_.Length
-            Modificado= $_.LastWriteTime
-            Caminho   = $_.FullName
-        })
-    }
-}
+Escrever 'Varrendo o disco... aguarde.'
+$inicio    = Get-Date
+$varredura = Medir "$Unidade\" -LimiteGrande ($MinimoMB * 1MB) -PorTopo -AvisoACada 100000
+$porPasta  = $varredura.PorTopo
+$grandes   = $varredura.Grandes
 Escrever ("Varredura concluida: {0} arquivos em {1:N1} minutos." -f `
-    $contador, ((Get-Date) - $inicio).TotalMinutes)
+    $varredura.Arquivos, ((Get-Date) - $inicio).TotalMinutes)
+if ($varredura.PastasNegadas -gt 0) {
+    Escrever ("({0} pastas sem permissao de leitura foram puladas.)" -f $varredura.PastasNegadas)
+}
 
 Escrever ''
 Escrever "-- $TopPastas maiores pastas de primeiro nivel --"

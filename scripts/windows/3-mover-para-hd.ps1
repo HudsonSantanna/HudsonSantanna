@@ -23,10 +23,31 @@ param(
 $ErrorActionPreference = 'Stop'
 
 function ComoGB($Bytes) { '{0,8:N2} GB' -f ($Bytes / 1GB) }
-function TamanhoPasta([string]$Caminho) {
-    $s = (Get-ChildItem -LiteralPath $Caminho -Recurse -File -Force -ErrorAction SilentlyContinue |
-            Measure-Object -Property Length -Sum).Sum
-    if ($null -eq $s) { [int64]0 } else { [int64]$s }
+# Tamanho e quantidade de arquivos numa passada so, direto pelo .NET (bem mais
+# rapido que Get-ChildItem -Recurse). Nao entra em junctions/links simbolicos.
+# Pastas sem permissao sao contadas em PastasNegadas: se houver alguma, a
+# conferencia nao e confiavel e a origem nao sera apagada.
+function Medir([string]$Caminho) {
+    $raiz = New-Object System.IO.DirectoryInfo $Caminho
+    $reparse  = [System.IO.FileAttributes]::ReparsePoint
+    $bytes    = [int64]0
+    $arquivos = [int64]0
+    $negadas  = 0
+    $pilha    = New-Object System.Collections.Stack
+    if ($raiz.Exists) { $pilha.Push($raiz) }
+    while ($pilha.Count -gt 0) {
+        $dir = $pilha.Pop()
+        try { $entradas = $dir.GetFileSystemInfos() } catch { $negadas++; continue }
+        foreach ($e in $entradas) {
+            if ($e -is [System.IO.DirectoryInfo]) {
+                if (($e.Attributes -band $reparse) -eq 0) { $pilha.Push($e) }
+            } else {
+                $bytes += $e.Length
+                $arquivos++
+            }
+        }
+    }
+    [pscustomobject]@{ Bytes = $bytes; Arquivos = $arquivos; PastasNegadas = $negadas }
 }
 
 if (-not (Test-Path -LiteralPath $Origem)) { throw "Origem nao encontrada: $Origem" }
@@ -39,8 +60,9 @@ if (-not (Test-Path -LiteralPath $raizDestino)) {
 $nomePasta   = Split-Path $Origem -Leaf
 $destinoFinal = Join-Path $Destino $nomePasta
 
-$tamOrigem = TamanhoPasta $Origem
-$qtdOrigem = @(Get-ChildItem -LiteralPath $Origem -Recurse -File -Force -ErrorAction SilentlyContinue).Count
+$medOrigem = Medir $Origem
+$tamOrigem = $medOrigem.Bytes
+$qtdOrigem = $medOrigem.Arquivos
 $livreDestino = (Get-Volume -DriveLetter $raizDestino.TrimEnd(':')).SizeRemaining
 
 Write-Host ''
@@ -75,13 +97,19 @@ Write-Host "Copia concluida (codigo robocopy $codigo)."
 # -------------------------------------------------------------- conferencia
 Write-Host ''
 Write-Host 'Conferindo a copia (tamanho e contagem de arquivos)...'
-$tamDestino = TamanhoPasta $destinoFinal
-$qtdDestino = @(Get-ChildItem -LiteralPath $destinoFinal -Recurse -File -Force -ErrorAction SilentlyContinue).Count
+$medDestino = Medir $destinoFinal
+$tamDestino = $medDestino.Bytes
+$qtdDestino = $medDestino.Arquivos
 
 Write-Host ("Origem : {0} em {1} arquivos" -f (ComoGB $tamOrigem), $qtdOrigem)
 Write-Host ("Destino: {0} em {1} arquivos" -f (ComoGB $tamDestino), $qtdDestino)
 
-$integra = ($tamDestino -eq $tamOrigem -and $qtdDestino -eq $qtdOrigem)
+if ($medOrigem.PastasNegadas -gt 0 -or $medDestino.PastasNegadas -gt 0) {
+    Write-Host ("Pastas sem permissao de leitura: origem {0}, destino {1}." -f `
+        $medOrigem.PastasNegadas, $medDestino.PastasNegadas) -ForegroundColor Yellow
+}
+$integra = ($tamDestino -eq $tamOrigem -and $qtdDestino -eq $qtdOrigem -and
+            $medOrigem.PastasNegadas -eq 0 -and $medDestino.PastasNegadas -eq 0)
 if (-not $integra) {
     Write-Host ''
     Write-Host 'A copia NAO confere com a origem. Nada sera apagado.' -ForegroundColor Red

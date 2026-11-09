@@ -17,7 +17,8 @@ Scripts para PowerShell no Windows. **Nada é apagado sem você mandar.**
 powershell -ExecutionPolicy Bypass -File .\1-diagnostico.ps1
 ```
 
-Leva de 2 a 10 minutos (varre o disco inteiro). Ao final salva um relatório na
+Varre o disco inteiro, lendo direto pelo .NET (bem mais rápido que o
+Get-ChildItem). Ao final salva um relatório na
 Área de Trabalho com:
 
 - espaço livre e uso de cada volume
