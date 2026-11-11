@@ -161,7 +161,7 @@ if ($memAntes.Total -le 8.5GB) {
 
 # --------------------------------------------------- maiores em memoria
 Titulo 'O QUE MAIS OCUPA MEMORIA (agrupado por programa)'
-Escrever ('{0,-28} {1,5} {2,13} {3,13}' -f 'Programa', 'Qtd', 'Na RAM', 'Reservado')
+Escrever ('{0,-38} {1,5} {2,13} {3,13}' -f 'Programa', 'Qtd', 'Na RAM', 'Reservado')
 $processos = Get-Process
 $grupos = $processos | Group-Object ProcessName | ForEach-Object {
     [pscustomobject]@{
@@ -175,7 +175,8 @@ foreach ($g in $grupos) {
     $marca = ''
     if ($Protegidos -contains $g.Nome.ToLower()) { $marca = '  (trabalho/vigias - nao fechar)' }
     elseif ($Aplicativos.Contains($g.Nome))      { $marca = '  <- dispensavel' }
-    Escrever ('{0,-28} {1,5} {2} {3}{4}' -f $g.Nome, $g.Qtd, (ComoMB $g.NaRam), (ComoMB $g.Reservado), $marca)
+    $nomeCurto = if ($g.Nome.Length -gt 38) { $g.Nome.Substring(0, 37) + '~' } else { $g.Nome }
+    Escrever ('{0,-38} {1,5} {2} {3}{4}' -f $nomeCurto, $g.Qtd, (ComoMB $g.NaRam), (ComoMB $g.Reservado), $marca)
 }
 $chrome = $grupos | Where-Object { $_.Nome -eq 'chrome' }
 if ($chrome -and $chrome.NaRam -gt 1.5GB) {
@@ -280,6 +281,13 @@ if ($Executar) {
     $memDepois = Memoria
     Escrever ("RAM livre antes : {0}" -f (ComoGB $memAntes.Livre))
     Escrever ("RAM livre agora : {0}   (ganho de {1})" -f (ComoGB $memDepois.Livre), (ComoGB ($memDepois.Livre - $memAntes.Livre)))
+    if (($memDepois.Livre - $memAntes.Livre) -lt 0.5GB) {
+        Escrever ''
+        Escrever 'Ganho pequeno: quem ocupa a memoria sao os programas abertos da lista acima' 'Yellow'
+        Escrever '(abas do Chrome, apps como ChatGPT/WhatsApp). Feche o que nao estiver usando.' 'Yellow'
+        Escrever 'Se nem assim sobrar 1 GB livre, a maquina precisa de mais memoria RAM:' 'Yellow'
+        Escrever 'veja os "Slots usados" em Gerenciador de Tarefas > Desempenho > Memoria.' 'Yellow'
+    }
 } else {
     Escrever 'Para desligar o que esta marcado acima:'
     Escrever '  powershell -ExecutionPolicy Bypass -File .\aliviar-memoria.ps1 -Executar'

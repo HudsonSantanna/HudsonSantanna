@@ -121,6 +121,14 @@ Com `-Executar` ele **desliga só uma lista fechada**:
 spooler e impressoras, Windows Update, antivírus e Agendador de Tarefas. O
 Chrome aparece no relatório, mas quem decide fechar abas é você.
 
+> **Não espere muito dos serviços.** Na primeira máquina testada (memória a
+> 92%), desligar todos eles liberou só uns 0,1 GB. A parte que mais ajuda é o
+> **relatório**: ele mostra que quem ocupa a memória são os programas abertos
+> (Chrome com dezenas de abas, app do ChatGPT, WebView2). Fechar esses programas
+> libera mais do que todos os serviços juntos. E se a RAM livre fica abaixo de
+> 1 GB com o uso normal, a solução é mais memória. Veja em Gerenciador de
+> Tarefas › Desempenho › Memória quantos **slots** estão em uso.
+
 Os serviços ficam desativados também depois de reiniciar. A configuração
 original fica guardada em `C:\ProgramData\Manutencao\servicos-originais.json`,
 e para voltar tudo como era:
