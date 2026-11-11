@@ -89,7 +89,7 @@ if (-not (EhAdmin)) {
 }
 
 $unidade = $env:SystemDrive
-$livreAntes = (Get-Volume -DriveLetter $unidade.TrimEnd(':')).SizeRemaining
+$livreAntes = (New-Object IO.DriveInfo $unidade).TotalFreeSpace
 Escrever ("Espaco livre antes: {0}" -f (ComoGB $livreAntes))
 Escrever ''
 
@@ -179,7 +179,7 @@ if ($LimparComponentes) {
 Escrever ''
 Escrever ('=' * 60)
 if ($Executar) {
-    $livreDepois = (Get-Volume -DriveLetter $unidade.TrimEnd(':')).SizeRemaining
+    $livreDepois = (New-Object IO.DriveInfo $unidade).TotalFreeSpace
     Escrever ("Espaco livre depois: {0}" -f (ComoGB $livreDepois))
     Escrever ("Ganho real .........: {0}" -f (ComoGB ($livreDepois - $livreAntes)))
 } else {
