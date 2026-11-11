@@ -114,6 +114,49 @@ function TamanhoPasta([string]$Caminho) {
     if ($m) { $m.Bytes } else { $null }
 }
 
+# O WMI ja travou nesta maquina (docs/20-manutencao-vigias.md, caso de 15/10).
+# Tudo que so existe pelo WMI (SMART, pontos de restauracao) roda num
+# powershell.exe separado, com prazo: se travar, o filho e encerrado e o
+# diagnostico segue. O resto e lido sem WMI (registro, .NET, API do Windows).
+function IniciarFilho([string]$Codigo) {
+    $envelope = "`$ProgressPreference = 'SilentlyContinue'; `$ErrorActionPreference = 'SilentlyContinue'`n" +
+                "[Console]::OutputEncoding = [Text.Encoding]::UTF8`n" + $Codigo
+    try {
+        $psi = New-Object Diagnostics.ProcessStartInfo
+        $psi.FileName  = 'powershell.exe'
+        $psi.Arguments = '-NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand ' +
+                         [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($envelope))
+        $psi.UseShellExecute        = $false
+        $psi.CreateNoWindow         = $true
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError  = $true
+        $psi.StandardOutputEncoding = [Text.Encoding]::UTF8
+        $p = [Diagnostics.Process]::Start($psi)
+        [pscustomobject]@{
+            Processo = $p
+            Saida    = $p.StandardOutput.ReadToEndAsync()
+            Erro     = $p.StandardError.ReadToEndAsync()
+            Inicio   = Get-Date
+        }
+    } catch { $null }
+}
+# Devolve a lista que o filho imprimiu (linha 'JSON:...'), ou $null se ele nao
+# terminou dentro do prazo (contado desde que foi iniciado).
+function ColherFilho($Filho, [int]$Segundos) {
+    if (-not $Filho) { return $null }
+    $resta = [int]([Math]::Max(0, $Segundos - ((Get-Date) - $Filho.Inicio).TotalSeconds) * 1000)
+    if (-not $Filho.Processo.WaitForExit($resta)) {
+        try { $Filho.Processo.Kill() } catch { }
+        return $null
+    }
+    $Filho.Processo.WaitForExit()
+    $json = $Filho.Saida.Result -split "`r?`n" | Where-Object { $_.StartsWith('JSON:') } | Select-Object -Last 1
+    if (-not $json) { return ,@() }
+    # PowerShell 5.1: ConvertFrom-Json devolve o array como UM objeto; o foreach desembrulha.
+    ,@(foreach ($x in ($json.Substring(5) | ConvertFrom-Json)) { $x })
+}
+$PrazoWmi = 60
+
 Escrever "Diagnostico da maquina - $(Get-Date -Format 'dd/MM/yyyy HH:mm')"
 Escrever "Computador: $env:COMPUTERNAME   Usuario: $env:USERNAME"
 if (-not (EhAdmin)) {
@@ -122,48 +165,97 @@ if (-not (EhAdmin)) {
     Escrever '*** pontos de restauracao, WinSxS) podem aparecer incompletos.'
 }
 
+# Os dois filhos comecam ja, em paralelo com o resto do diagnostico.
+$filhoDiscos = IniciarFilho @'
+$lista = @(foreach ($d in (Get-PhysicalDisk)) {
+    $rc = $d | Get-StorageReliabilityCounter
+    [pscustomobject]@{
+        Nome         = [string]$d.FriendlyName
+        Tipo         = [string]$d.MediaType
+        Tamanho      = [double]$d.Size
+        Saude        = [string]$d.HealthStatus
+        Estado       = (@($d.OperationalStatus) | ForEach-Object { [string]$_ }) -join ', '
+        TemContador  = [bool]$rc
+        Horas        = $rc.PowerOnHours
+        Desgaste     = $rc.Wear
+        Temp         = $rc.Temperature
+        ErrosLeitura = $rc.ReadErrorsTotal
+        ErrosEscrita = $rc.WriteErrorsTotal
+    }
+})
+'JSON:' + (ConvertTo-Json -InputObject $lista -Compress -Depth 3)
+'@
+$filhoPontos = IniciarFilho @'
+'JSON:' + (ConvertTo-Json -InputObject @(@(Get-ComputerRestorePoint).Count) -Compress)
+'@
+
 # ------------------------------------------------------------------ sistema
 Titulo 'SISTEMA'
-$so  = Get-CimInstance Win32_OperatingSystem
-$cs  = Get-CimInstance Win32_ComputerSystem
-$cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
-Escrever ("Modelo .........: {0} {1}" -f $cs.Manufacturer, $cs.Model)
-Escrever ("Windows ........: {0} (build {1})" -f $so.Caption, $so.BuildNumber)
-Escrever ("Processador ....: {0}" -f $cpu.Name)
-Escrever ("Memoria RAM ....: {0}" -f (ComoGB $cs.TotalPhysicalMemory))
-Escrever ("RAM livre ......: {0}" -f (ComoGB ($so.FreePhysicalMemory * 1KB)))
-Escrever ("Ligado desde ...: {0}" -f $so.LastBootUpTime)
+$cv   = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+$bios = Get-ItemProperty 'HKLM:\HARDWARE\DESCRIPTION\System\BIOS'
+$cpu  = Get-ItemProperty 'HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0'
+$nomeWin = [string]$cv.ProductName
+# O registro continua dizendo "Windows 10" no Windows 11.
+if ([int]$cv.CurrentBuild -ge 22000) { $nomeWin = $nomeWin -replace 'Windows 10', 'Windows 11' }
+Escrever ("Modelo .........: {0} {1}" -f $bios.SystemManufacturer, $bios.SystemProductName)
+Escrever ("Windows ........: {0} {1} (build {2})" -f $nomeWin, $cv.DisplayVersion, $cv.CurrentBuild)
+Escrever ("Processador ....: {0}" -f ([string]$cpu.ProcessorNameString).Trim())
+try {
+    Add-Type -AssemblyName Microsoft.VisualBasic -ErrorAction Stop
+    $ci = New-Object Microsoft.VisualBasic.Devices.ComputerInfo
+    Escrever ("Memoria RAM ....: {0}" -f (ComoGB ([double]$ci.TotalPhysicalMemory)))
+    Escrever ("RAM livre ......: {0}" -f (ComoGB ([double]$ci.AvailablePhysicalMemory)))
+} catch {
+    Escrever 'Memoria RAM ....: (nao foi possivel ler)'
+}
+try {
+    if (-not ('DiagnosticoV1.Relogio' -as [type])) {
+        Add-Type -ErrorAction Stop -Namespace DiagnosticoV1 -Name Relogio -MemberDefinition `
+            '[DllImport("kernel32.dll")] public static extern ulong GetTickCount64();'
+    }
+    $boot = (Get-Date).AddMilliseconds(-1 * [double][DiagnosticoV1.Relogio]::GetTickCount64())
+    Escrever ("Ligado desde ...: {0:dd/MM/yyyy HH:mm}" -f $boot)
+} catch { }
 
 # ------------------------------------------------------------------ volumes
 Titulo 'VOLUMES'
 Escrever ('{0,-6} {1,-16} {2,14} {3,14} {4,8}' -f 'Letra','Rotulo','Tamanho','Livre','Uso')
-foreach ($v in (Get-Volume | Where-Object { $_.DriveLetter } | Sort-Object DriveLetter)) {
-    $uso = if ($v.Size -gt 0) { '{0,6:N1}%' -f ((1 - $v.SizeRemaining / $v.Size) * 100) } else { '-' }
+# So discos locais: unidade de rede desconectada faz o DriveInfo esperar muito.
+$volumes = [IO.DriveInfo]::GetDrives() | Where-Object {
+    ($_.DriveType -eq 'Fixed' -or $_.DriveType -eq 'Removable') -and $_.IsReady
+}
+foreach ($v in $volumes) {
+    $uso = if ($v.TotalSize -gt 0) { '{0,6:N1}%' -f ((1 - $v.TotalFreeSpace / $v.TotalSize) * 100) } else { '-' }
     Escrever ('{0,-6} {1,-16} {2,14} {3,14} {4,8}' -f `
-        "$($v.DriveLetter):", $v.FileSystemLabel, (ComoGB $v.Size), (ComoGB $v.SizeRemaining), $uso)
-    if ($v.Size -gt 0 -and ($v.SizeRemaining / $v.Size) -lt 0.10) {
+        $v.Name.TrimEnd('\'), $v.VolumeLabel, (ComoGB $v.TotalSize), (ComoGB $v.TotalFreeSpace), $uso)
+    if ($v.TotalSize -gt 0 -and ($v.TotalFreeSpace / $v.TotalSize) -lt 0.10) {
         Escrever "       ^^ ATENCAO: menos de 10% livre neste volume."
     }
 }
 
 # ------------------------------------------------------------ saude fisica
 Titulo 'SAUDE DOS DISCOS'
-$discos = Get-PhysicalDisk
-if ($discos) {
+$discos = ColherFilho $filhoDiscos $PrazoWmi
+if ($null -eq $discos) {
+    Escrever "O WMI nao respondeu em $PrazoWmi s: saude dos discos indisponivel."
+    Escrever '    ^^ WMI travado. Reinicie a maquina fora do expediente e rode de novo.'
+} elseif ($discos.Count -eq 0) {
+    Escrever 'Nao foi possivel ler os discos fisicos (requer administrador).'
+} else {
     foreach ($d in $discos) {
         Escrever ("{0} | {1} | {2} | Saude: {3} | Estado: {4}" -f `
-            $d.FriendlyName, $d.MediaType, (ComoGB $d.Size).Trim(), $d.HealthStatus, $d.OperationalStatus)
-        $rc = $d | Get-StorageReliabilityCounter
-        if ($rc) {
+            $d.Nome, $d.Tipo, (ComoGB $d.Tamanho).Trim(), $d.Saude, $d.Estado)
+        if ($d.TemContador) {
             Escrever ("    Horas ligado: {0} | Desgaste: {1} | Temp: {2} C | Erros leitura: {3} | Erros escrita: {4}" -f `
-                $rc.PowerOnHours, $rc.Wear, $rc.Temperature, $rc.ReadErrorsTotal, $rc.WriteErrorsTotal)
+                $d.Horas, $d.Desgaste, $d.Temp, $d.ErrosLeitura, $d.ErrosEscrita)
         }
-        if ($d.HealthStatus -ne 'Healthy') {
+        if ($d.Saude -ne 'Healthy') {
             Escrever '    ^^ DISCO COM PROBLEMA: faca backup antes de qualquer limpeza.'
         }
+        if ($d.Tipo -eq 'HDD') {
+            Escrever '    (HD mecanico: e o principal motivo de "Disco 100%". Trocar por SSD resolve.)'
+        }
     }
-} else {
-    Escrever 'Nao foi possivel ler os discos fisicos (requer administrador).'
 }
 
 # --------------------------------------------------- espaco recuperavel
@@ -195,10 +287,13 @@ Escrever ''
 Escrever ("Soma dos caches e temporarios: {0}" -f (ComoGB $totalRecuperavel))
 Escrever 'Obs.: Downloads e Lixeira podem conter coisa que voce quer guardar - confira antes.'
 
-$pontos = Get-ComputerRestorePoint
-if ($pontos) {
+$pontos = ColherFilho $filhoPontos $PrazoWmi
+if ($null -eq $pontos) {
     Escrever ''
-    Escrever "Pontos de restauracao: $($pontos.Count) (o mais antigo pode ser descartado)"
+    Escrever "Pontos de restauracao: WMI nao respondeu em $PrazoWmi s."
+} elseif ($pontos.Count -gt 0 -and [int]$pontos[0] -gt 0) {
+    Escrever ''
+    Escrever "Pontos de restauracao: $($pontos[0]) (o mais antigo pode ser descartado)"
 }
 
 # ------------------------------------------------- varredura do disco
@@ -265,17 +360,33 @@ Get-ItemProperty $chaves |
 
 # --------------------------------------------------------- inicializacao
 Titulo 'PROGRAMAS QUE INICIAM COM O WINDOWS'
-Get-CimInstance Win32_StartupCommand | ForEach-Object {
-    Escrever ('{0,-34} {1}' -f $_.Name, $_.Command)
+# Le os mesmos lugares que o Win32_StartupCommand, mas sem passar pelo WMI.
+$chavesRun = @(
+    'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run',
+    'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run',
+    'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run'
+)
+foreach ($k in $chavesRun) {
+    $chave = Get-Item -LiteralPath $k
+    if (-not $chave) { continue }
+    foreach ($n in $chave.GetValueNames()) {
+        if ($n) { Escrever ('{0,-34} {1}' -f $n, $chave.GetValue($n)) }
+    }
+}
+foreach ($pasta in @([Environment]::GetFolderPath('Startup'), [Environment]::GetFolderPath('CommonStartup'))) {
+    if (-not $pasta) { continue }
+    Get-ChildItem -LiteralPath $pasta -File -Force | Where-Object { $_.Name -ne 'desktop.ini' } | ForEach-Object {
+        Escrever ('{0,-34} {1}' -f $_.BaseName, $_.FullName)
+    }
 }
 Escrever ''
 Escrever 'Para desativar o que nao usa: Ctrl+Shift+Esc -> aba Aplicativos de Inicializacao.'
 
 # -------------------------------------------------------------- resumo
 Titulo 'RESUMO'
-$vol = Get-Volume -DriveLetter $Unidade.TrimEnd(':')
-if ($vol) {
-    Escrever ("Volume {0}: {1} livres de {2}" -f $Unidade, (ComoGB $vol.SizeRemaining), (ComoGB $vol.Size))
+$vol = New-Object IO.DriveInfo $Unidade
+if ($vol -and $vol.IsReady) {
+    Escrever ("Volume {0}: {1} livres de {2}" -f $Unidade, (ComoGB $vol.TotalFreeSpace), (ComoGB $vol.TotalSize))
 }
 Escrever ("Limpeza automatica pode liberar aproximadamente: {0}" -f (ComoGB $totalRecuperavel))
 Escrever ''

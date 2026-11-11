@@ -63,7 +63,7 @@ $destinoFinal = Join-Path $Destino $nomePasta
 $medOrigem = Medir $Origem
 $tamOrigem = $medOrigem.Bytes
 $qtdOrigem = $medOrigem.Arquivos
-$livreDestino = (Get-Volume -DriveLetter $raizDestino.TrimEnd(':')).SizeRemaining
+$livreDestino = (New-Object IO.DriveInfo $raizDestino).AvailableFreeSpace
 
 Write-Host ''
 Write-Host "Origem ........: $Origem"
